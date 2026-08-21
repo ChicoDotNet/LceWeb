@@ -17,6 +17,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate PowerShell scripts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $failed = $false
+
+          Get-ChildItem scripts -Recurse -Filter *.ps1 | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $_.FullName,
+              [ref]$tokens,
+              [ref]$errors) | Out-Null
+
+            foreach ($parseError in $errors) {
+              Write-Error "$($_.FullName):$($parseError.Extent.StartLineNumber): $($parseError.Message)"
+              $failed = $true
+            }
+          }
+
+          if ($failed) {
+            throw 'PowerShell syntax validation failed.'
+          }
+
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
