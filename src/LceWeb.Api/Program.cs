@@ -3,12 +3,7 @@ using LceWeb.Api.Diagnostics;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.ConfigureHttpJsonOptions(options => DiagnosticJson.Configure(options.SerializerOptions));
-
-var diagnosticDirectory = Path.Combine(builder.Environment.ContentRootPath, "diagnostics");
-var diagnosticDefinitions = DiagnosticDefinitionLoader.LoadDirectory(diagnosticDirectory);
-
-builder.Services.AddSingleton<IDiagnosticDefinitionRepository>(
-    new InMemoryDiagnosticDefinitionRepository(diagnosticDefinitions));
+builder.Services.AddDiagnosticDefinitionRepository(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
