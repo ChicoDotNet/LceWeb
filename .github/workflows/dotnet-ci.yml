@@ -41,6 +41,14 @@ jobs:
             throw 'PowerShell syntax validation failed.'
           }
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Test diagnostic runtime core
+        run: npm run test:diagnostics
+
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
@@ -52,7 +60,7 @@ jobs:
       - name: Build
         run: dotnet build src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-restore
 
-      - name: Smoke test API
+      - name: Smoke test API and static runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -83,3 +91,12 @@ jobs:
           grep -q '"id":"16f5812b-6a27-44f6-b5b4-557a720a6425"' /tmp/diagnostic.json
           grep -q '"version":1' /tmp/diagnostic.json
           grep -q '"isActive":true' /tmp/diagnostic.json
+
+          curl --fail --silent http://127.0.0.1:5055/diagnostic-demo.html > /tmp/demo.html
+          grep -q 'data-diagnostic-id="16f5812b-6a27-44f6-b5b4-557a720a6425"' /tmp/demo.html
+
+          curl --fail --silent http://127.0.0.1:5055/js/diagnostics/diagnostic-core.js > /tmp/diagnostic-core.js
+          grep -q 'buildDiagnosticResult' /tmp/diagnostic-core.js
+
+          curl --fail --silent http://127.0.0.1:5055/js/diagnostics/diagnostic-runtime.js > /tmp/diagnostic-runtime.js
+          grep -q 'diagnostic:completed' /tmp/diagnostic-runtime.js
