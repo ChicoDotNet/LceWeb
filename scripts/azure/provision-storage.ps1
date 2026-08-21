@@ -14,6 +14,9 @@ param(
 
     [string]$OperatorObjectId,
 
+    [ValidateSet("User", "ServicePrincipal", "Group")]
+    [string]$OperatorPrincipalType = "User",
+
     [string]$SubscriptionId
 )
 
@@ -26,6 +29,36 @@ function Invoke-AzCli {
     & az @Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "Azure CLI command failed: az $($Arguments -join ' ')"
+    }
+}
+
+function Ensure-TableDataRole {
+    param(
+        [Parameter(Mandatory = $true)][string]$PrincipalId,
+        [Parameter(Mandatory = $true)][string]$PrincipalType,
+        [Parameter(Mandatory = $true)][string]$Scope
+    )
+
+    $roleName = "Storage Table Data Contributor"
+    $existingRole = & az role assignment list `
+        --assignee-object-id $PrincipalId `
+        --scope $Scope `
+        --role $roleName `
+        --fill-principal-name false `
+        --query "[0].id" `
+        --output tsv
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not inspect role assignments for principal '$PrincipalId'."
+    }
+
+    if (-not $existingRole) {
+        Invoke-AzCli role assignment create `
+            --assignee-object-id $PrincipalId `
+            --assignee-principal-type $PrincipalType `
+            --role $roleName `
+            --scope $Scope `
+            --output none
     }
 }
 
@@ -80,30 +113,22 @@ if (-not $OperatorObjectId) {
     $accountType = & az account show --query user.type --output tsv
     if ($LASTEXITCODE -eq 0 -and $accountType -eq "user") {
         $OperatorObjectId = & az ad signed-in-user show --query id --output tsv
+        $OperatorPrincipalType = "User"
     }
 }
 
-$roleName = "Storage Table Data Contributor"
-foreach ($principal in @($OperatorObjectId, $AppServicePrincipalId) | Where-Object { $_ }) {
-    $existingRole = & az role assignment list `
-        --assignee-object-id $principal `
-        --scope $storageId `
-        --role $roleName `
-        --query "[0].id" `
-        --output tsv
+if ($OperatorObjectId) {
+    Ensure-TableDataRole `
+        -PrincipalId $OperatorObjectId `
+        -PrincipalType $OperatorPrincipalType `
+        -Scope $storageId
+}
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Could not inspect role assignments for principal '$principal'."
-    }
-
-    if (-not $existingRole) {
-        Invoke-AzCli role assignment create `
-            --assignee-object-id $principal `
-            --assignee-principal-type ServicePrincipal `
-            --role $roleName `
-            --scope $storageId `
-            --output none
-    }
+if ($AppServicePrincipalId) {
+    Ensure-TableDataRole `
+        -PrincipalId $AppServicePrincipalId `
+        -PrincipalType "ServicePrincipal" `
+        -Scope $storageId
 }
 
 $attempts = 0
@@ -122,7 +147,7 @@ while (-not $created -and $attempts -lt 6) {
     }
 
     if (-not $OperatorObjectId) {
-        throw "Table creation requires data-plane access. Rerun with -OperatorObjectId after granting '$roleName'."
+        throw "Table creation requires data-plane access. Rerun with -OperatorObjectId after granting 'Storage Table Data Contributor'."
     }
 
     if ($attempts -lt 6) {
@@ -142,8 +167,8 @@ $tableEndpoint = & az storage account show `
     --output tsv
 
 Write-Host "Storage ready."
-Write-Host "  Account:       $StorageAccountName"
-Write-Host "  Table:         $TableName"
+Write-Host "  Account:        $StorageAccountName"
+Write-Host "  Table:          $TableName"
 Write-Host "  Table endpoint: $tableEndpoint"
 Write-Host ""
 Write-Host "App Service settings:"
