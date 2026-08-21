@@ -1,0 +1,61 @@
+name: dotnet-ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore src/LceWeb.Api/LceWeb.Api.csproj
+
+      - name: Build
+        run: dotnet build src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-restore
+
+      - name: Smoke test API
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ASPNETCORE_URLS=http://127.0.0.1:5055
+          dotnet run --project src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-build > /tmp/lceweb-api.log 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid" 2>/dev/null || true' EXIT
+
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:5055/health > /tmp/health.json; then
+              break
+            fi
+
+            if ! kill -0 "$api_pid" 2>/dev/null; then
+              cat /tmp/lceweb-api.log
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          grep -q '"status":"ok"' /tmp/health.json
+
+          curl --fail --silent \
+            http://127.0.0.1:5055/api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425 \
+            > /tmp/diagnostic.json
+
+          grep -q '"id":"16f5812b-6a27-44f6-b5b4-557a720a6425"' /tmp/diagnostic.json
+          grep -q '"version":1' /tmp/diagnostic.json
+          grep -q '"isActive":true' /tmp/diagnostic.json
