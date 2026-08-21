@@ -2,9 +2,9 @@
 
 Backend and vanilla-web foundation for LCE configurable diagnostic experiences.
 
-## Current increment
+## Current state
 
-The current draft PR implements the first diagnostic vertical slice foundation:
+The current draft PR implements the first two backend deliveries:
 
 - ASP.NET Core on .NET 10 LTS;
 - versioned hierarchical diagnostic JSON contract;
@@ -12,34 +12,35 @@ The current draft PR implements the first diagnostic vertical slice foundation:
 - single-choice, multiple-choice and text questions;
 - conditional visibility;
 - optional multidimensional scoring metadata;
-- semantic validation at application startup;
-- repository abstraction with an in-memory implementation;
+- semantic validation;
 - `GET /api/diagnostics/{diagnosticId}`;
-- JSON definitions loaded from disk without changing C#;
-- GitHub Actions build/smoke-test workflow.
+- repository abstraction shared by local and Azure persistence;
+- local JSON/in-memory repository for development and CI;
+- Azure Table Storage repository using `Azure.Data.Tables`;
+- `DefaultAzureCredential` / Managed Identity authentication for App Service;
+- PowerShell + Azure CLI scripts to provision Table Storage and seed versioned definitions;
+- GitHub Actions build, runtime smoke test and PowerShell syntax validation.
 
-Azure Table Storage replaces the in-memory repository in the next delivery without changing the public endpoint contract.
+The next vertical slice is the reusable vanilla JavaScript diagnostic runtime for one landing page.
 
 ## Requirements
 
 - .NET 10 SDK
+- Azure CLI + PowerShell 7 for Azure provisioning/operations
 
 ## Run locally
+
+No Azure resources are required for normal development. With no storage configuration the API reads definitions from disk into memory.
 
 ```powershell
 dotnet restore ./src/LceWeb.Api/LceWeb.Api.csproj
 dotnet run --project ./src/LceWeb.Api/LceWeb.Api.csproj
 ```
 
-The application publishes a health endpoint:
+Endpoints:
 
 ```text
 GET /health
-```
-
-and the diagnostic endpoint:
-
-```text
 GET /api/diagnostics/{diagnosticId}
 ```
 
@@ -57,7 +58,7 @@ Invoke-RestMethod "$baseUrl/api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425
 
 ## Diagnostic definitions
 
-Development definitions currently live under:
+Development definitions live under:
 
 ```text
 src/LceWeb.Api/diagnostics/
@@ -69,24 +70,54 @@ The machine-readable contract is:
 contracts/diagnostic-definition.schema.json
 ```
 
-Definitions are loaded and validated when the API starts. Changing the diagnostic JSON changes the API response without recompiling the application; restart the running process to reload the local in-memory set.
+Changing the semantic meaning of an existing question, answer, branch or score should create a new diagnostic version rather than silently changing historical meaning.
 
-Changing the meaning of an existing question or answer should create a new diagnostic version rather than silently changing historical semantics.
+## Azure Table Storage
+
+Set these App Service settings to use Azure Tables instead of the local repository:
+
+```text
+Diagnostics__Storage__Provider=AzureTable
+Diagnostics__Storage__TableName=DiagnosticDefinitions
+Diagnostics__Storage__TableEndpoint=https://<storage-account>.table.core.windows.net/
+```
+
+Production authentication uses the App Service Managed Identity through `DefaultAzureCredential`; no Storage Account key is required in application settings.
+
+Provision the Storage Account/table from Azure Cloud Shell:
+
+```powershell
+./scripts/azure/provision-storage.ps1 `
+  -ResourceGroupName '<resource-group>' `
+  -StorageAccountName '<globally-unique-storage-name>' `
+  -Location 'centralus'
+```
+
+Seed a diagnostic definition:
+
+```powershell
+./scripts/azure/seed-diagnostics.ps1 `
+  -StorageAccountName '<storage-account>' `
+  -DefinitionPath './src/LceWeb.Api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425.v1.json'
+```
+
+See [`docs/AZURE-STORAGE.md`](docs/AZURE-STORAGE.md) for the table layout, Managed Identity/RBAC setup, App Service settings and Cloud Shell flow.
 
 ## Repository structure
 
 ```text
-.github/workflows/        CI
-contracts/                Public JSON contracts
-src/LceWeb.Api/           ASP.NET Core API
+.github/workflows/          CI
+contracts/                  Public JSON contracts
+docs/                       Delivery and operations documentation
+scripts/azure/              PowerShell + Azure CLI operations
+src/LceWeb.Api/             ASP.NET Core API
 src/LceWeb.Api/diagnostics/ Local diagnostic definitions
-docs/                     Delivery and operations documentation
 ```
 
 ## Infrastructure direction
 
-Azure infrastructure will be provisioned from Azure Portal / Cloud Shell using PowerShell scripts that invoke Azure CLI.
+Azure infrastructure is provisioned from Azure Portal / Cloud Shell using PowerShell scripts that invoke Azure CLI.
 
-No Bicep or Terraform is planned for this project.
+No Bicep or Terraform is used in this project.
 
-See [`docs/DELIVERY-PLAN.md`](docs/DELIVERY-PLAN.md) for the delivery sequence.
+See [`docs/DELIVERY-PLAN.md`](docs/DELIVERY-PLAN.md) for the complete delivery sequence.
