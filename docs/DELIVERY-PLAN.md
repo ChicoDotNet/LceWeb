@@ -130,7 +130,7 @@ Acceptance achieved:
 - a stored lead is never lost because email delivery fails;
 - notification failures are represented independently from the immutable lead JSON;
 - successful ACS send operation records its operation id;
-- all configured recipients receive the same readable notification payload;
+- all configured recipients use the same readable notification payload;
 - no ACS credential is required in browser code or committed source;
 - App Service can use Managed Identity for ACS authentication.
 
