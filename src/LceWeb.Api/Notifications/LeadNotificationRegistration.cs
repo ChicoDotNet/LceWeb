@@ -18,7 +18,6 @@ public static class LeadNotificationRegistration
             Endpoint = section["Endpoint"],
             ConnectionString = section["ConnectionString"],
             SenderAddress = section["SenderAddress"],
-            SenderDisplayName = section["SenderDisplayName"] ?? "LCE Comercial",
             SubjectPrefix = section["SubjectPrefix"] ?? "Nuevo prospecto LCE",
             Recipients = recipients
         };
