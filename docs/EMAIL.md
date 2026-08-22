@@ -115,6 +115,8 @@ The script:
 
 The script deliberately fails rather than silently granting a broader Azure role if the expected email-sender role cannot be resolved in the tenant/subscription.
 
+The Azure Managed Domain is a bootstrap path, not the intended final LCE brand identity. Delivery 7 will integrate the custom-domain workflow with Azure DNS and clearly identify any registrar/delegation action that cannot be completed inside Azure.
+
 ## Custom LCE domain
 
 A custom domain is a later infrastructure step because it requires DNS ownership verification plus sender authentication records and must be coordinated with the Azure DNS zone / registrar delegation work.
