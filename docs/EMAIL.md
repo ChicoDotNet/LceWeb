@@ -110,10 +110,10 @@ The script:
 5. links that domain to the Communication Services resource;
 6. resolves the generated MailFrom sender address;
 7. optionally applies the sender display name to the ACS Sender Username resource;
-8. assigns the App Service Managed Identity the ACS email-sender role when a principal id is supplied;
+8. when an App Service principal id is supplied, discovers the configured ACS email-sender role by name and assigns it at the Communication Services resource scope;
 9. prints the App Service settings required by the application.
 
-The script discovers the built-in role by name at execution time and fails clearly instead of silently granting a broader role if that role is unavailable in the subscription/tenant.
+The script deliberately fails rather than silently granting a broader Azure role if the expected email-sender role cannot be resolved in the tenant/subscription.
 
 ## Custom LCE domain
 
