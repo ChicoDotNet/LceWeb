@@ -46,7 +46,7 @@ jobs:
         with:
           node-version: 22.x
 
-      - name: Test diagnostic runtime core
+      - name: Test browser modules
         run: npm run test:diagnostics
 
       - name: Setup .NET 10
@@ -60,7 +60,7 @@ jobs:
       - name: Build
         run: dotnet build src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-restore
 
-      - name: Smoke test API and static runtime
+      - name: Smoke test API, lead pipeline and static runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -92,11 +92,59 @@ jobs:
           grep -q '"version":1' /tmp/diagnostic.json
           grep -q '"isActive":true' /tmp/diagnostic.json
 
+          cat > /tmp/lead.json <<'JSON'
+          {
+            "diagnosticId": "16f5812b-6a27-44f6-b5b4-557a720a6425",
+            "definitionVersion": 1,
+            "contact": {
+              "name": "CI Prospect",
+              "email": "ci@example.com",
+              "phone": {
+                "callingCode": "+52",
+                "number": "55 1234 5678"
+              }
+            },
+            "answers": [
+              { "questionId": "stage", "answerIds": ["planning"] },
+              { "questionId": "priorities", "answerIds": ["cost"] }
+            ],
+            "acquisition": {
+              "utmSource": "ci",
+              "pageUrl": "https://example.test/diagnostic"
+            },
+            "website": ""
+          }
+          JSON
+
+          curl --fail --silent \
+            -H 'Content-Type: application/json' \
+            --data @/tmp/lead.json \
+            http://127.0.0.1:5055/api/leads \
+            > /tmp/lead-response.json
+
+          grep -q '"definitionVersion":1' /tmp/lead-response.json
+          grep -q '"readiness":2' /tmp/lead-response.json
+          grep -q '"id":"readiness-active"' /tmp/lead-response.json
+
+          sed 's/"planning"/"tampered-option"/' /tmp/lead.json > /tmp/tampered-lead.json
+          tampered_status=$(curl --silent \
+            --output /tmp/tampered-response.json \
+            --write-out '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            --data @/tmp/tampered-lead.json \
+            http://127.0.0.1:5055/api/leads)
+          test "$tampered_status" = "400"
+          grep -q 'opción no válida' /tmp/tampered-response.json
+
           curl --fail --silent http://127.0.0.1:5055/diagnostic-demo.html > /tmp/demo.html
           grep -q 'data-diagnostic-id="16f5812b-6a27-44f6-b5b4-557a720a6425"' /tmp/demo.html
+          grep -q 'id="lead-capture"' /tmp/demo.html
 
           curl --fail --silent http://127.0.0.1:5055/js/diagnostics/diagnostic-core.js > /tmp/diagnostic-core.js
           grep -q 'buildDiagnosticResult' /tmp/diagnostic-core.js
 
           curl --fail --silent http://127.0.0.1:5055/js/diagnostics/diagnostic-runtime.js > /tmp/diagnostic-runtime.js
           grep -q 'diagnostic:completed' /tmp/diagnostic-runtime.js
+
+          curl --fail --silent http://127.0.0.1:5055/js/leads/lead-capture.js > /tmp/lead-capture.js
+          grep -q 'buildLeadSubmissionPayload' /tmp/lead-capture.js
