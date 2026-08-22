@@ -17,6 +17,7 @@ The current draft PR implements five slices of the configurable diagnostic pipel
 - Azure Communication Services Email notifications after durable lead persistence;
 - readable plaintext + HTML lead notifications for configured recipients;
 - persisted email notification status/operation id/failure detail;
+- Azure Managed Domain bootstrap via PowerShell/Azure CLI while the final custom-domain/DNS workflow remains a later infrastructure slice;
 - public-endpoint rate limiting, request-size ceiling and honeypot;
 - GitHub Actions build, browser-module tests and runtime smoke tests.
 
