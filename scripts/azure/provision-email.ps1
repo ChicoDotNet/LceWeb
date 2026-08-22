@@ -236,7 +236,6 @@ Write-Host "App Service settings:"
 Write-Host "  Email__Provider=AzureCommunicationServices"
 Write-Host "  Email__Endpoint=$endpoint"
 Write-Host "  Email__SenderAddress=$senderAddress"
-Write-Host "  Email__SenderDisplayName=$SenderDisplayName"
 if ($Recipients -and $Recipients.Count -gt 0) {
     Write-Host "  Email__Recipients=$($Recipients -join ';')"
 }
