@@ -1,14 +1,10 @@
-# Azure Table Storage for diagnostic definitions
+# Azure Table Storage for diagnostics and leads
 
-This delivery keeps the public diagnostic endpoint unchanged while allowing the repository implementation to switch from local JSON/in-memory storage to Azure Table Storage.
+The application can switch from local/in-memory persistence to Azure Table Storage without changing its public HTTP contracts.
 
 ## Runtime configuration
 
-The API uses local JSON definitions by default:
-
-```text
-Diagnostics__Storage__Provider=Memory
-```
+Local development defaults to memory-backed repositories.
 
 For App Service / Azure Table Storage configure:
 
@@ -16,13 +12,19 @@ For App Service / Azure Table Storage configure:
 Diagnostics__Storage__Provider=AzureTable
 Diagnostics__Storage__TableName=DiagnosticDefinitions
 Diagnostics__Storage__TableEndpoint=https://<storage-account>.table.core.windows.net/
+
+Leads__Storage__Provider=AzureTable
+Leads__Storage__TableName=LeadSubmissions
+Leads__Storage__TableEndpoint=https://<storage-account>.table.core.windows.net/
 ```
+
+When `Leads:Storage` is not configured explicitly, provider/endpoint/connection-string values fall back to `Diagnostics:Storage`; the lead table name still defaults to `LeadSubmissions`.
 
 Production authentication uses `DefaultAzureCredential`. In App Service this is intended to resolve to the application's Managed Identity. No Storage Account key or connection string is required in production settings.
 
-`Diagnostics__Storage__ConnectionString` exists only as a local-development escape hatch (for example, Azurite). Do not commit connection strings or production storage keys.
+Connection-string settings exist only as local-development escape hatches (for example, Azurite). Do not commit production storage keys.
 
-## Table layout
+## DiagnosticDefinitions layout
 
 Each diagnostic version is one entity:
 
@@ -42,15 +44,36 @@ PartitionKey = 16f5812b-6a27-44f6-b5b4-557a720a6425
 RowKey       = v0000000001
 ```
 
-The API queries only the diagnostic partition and returns the highest version. The existing endpoint then returns `410 Gone` when that latest definition is inactive.
+The GET endpoint resolves the highest version. Lead submission resolves the exact `(diagnostic GUID, version)` used by the browser so historical answers are never revalidated against a newer definition.
 
-Historical versions remain in the same partition, which means a future lead submission can retain the exact definition version used at capture time.
+## LeadSubmissions layout
 
-## Definition size
+Each accepted lead is one immutable submission entity:
 
-Azure Table string properties are UTF-16 and are limited to 64 KiB per property. `seed-diagnostics.ps1` enforces a conservative 60 KiB limit for `DefinitionJson`.
+```text
+PartitionKey      = diagnostic GUID
+RowKey            = submission GUID
+CreatedUtc        = DateTimeOffset
+DefinitionVersion = Int32
+Name              = searchable contact name
+Email             = searchable contact email
+CallingCode       = optional
+PhoneNumber       = optional
+UtmSource         = optional
+UtmMedium         = optional
+UtmCampaign       = optional
+PageUrl           = optional
+EmailStatus       = Pending
+SubmissionJson    = canonical complete lead submission
+```
 
-If definitions eventually exceed that size, change the persistence design (for example, chunked properties or Blob Storage plus table metadata). Do not manually truncate diagnostic JSON.
+`EmailStatus=Pending` is reserved for the Azure Communication Services notification delivery increment.
+
+## JSON property size
+
+Azure Table string properties are UTF-16 and are limited to 64 KiB per property. The project enforces a conservative 60 KiB limit for both `DefinitionJson` and `SubmissionJson`.
+
+If either document eventually exceeds that size, change the persistence design (for example, Blob Storage plus table metadata). Do not manually truncate canonical JSON.
 
 ## Provision from Azure Cloud Shell
 
@@ -71,7 +94,7 @@ The script is idempotent where practical. It:
 2. creates a `StorageV2` account using `Standard_LRS`;
 3. grants the Cloud Shell operator `Storage Table Data Contributor` when the signed-in principal is a user;
 4. optionally grants the App Service Managed Identity the same data-plane role;
-5. creates `DiagnosticDefinitions` using Azure AD login authentication;
+5. creates both `DiagnosticDefinitions` and `LeadSubmissions` using Azure AD login authentication;
 6. prints the App Service settings required by the API.
 
 If the App Service already exists, pass its Managed Identity principal id:
@@ -114,11 +137,11 @@ Seed several files in one execution:
   )
 ```
 
-Seeding is an upsert by `(PartitionKey, RowKey)`. Re-seeding the same GUID/version replaces that entity. If a change alters the semantic meaning of questions, answers, branching, or scoring, create a **new version** instead of replacing a version that may already have captured leads.
+Seeding is an upsert by `(PartitionKey, RowKey)`. If a change alters semantic meaning, create a **new version** instead of replacing a version that may already have captured leads.
 
 ## Configure App Service
 
-Once the Storage Account and Managed Identity exist, configure the app without storing credentials:
+Once the Storage Account and Managed Identity exist:
 
 ```powershell
 az webapp config appsettings set `
@@ -127,10 +150,13 @@ az webapp config appsettings set `
   --settings `
     Diagnostics__Storage__Provider=AzureTable `
     Diagnostics__Storage__TableName=DiagnosticDefinitions `
-    Diagnostics__Storage__TableEndpoint='https://<storage-account>.table.core.windows.net/'
+    Diagnostics__Storage__TableEndpoint='https://<storage-account>.table.core.windows.net/' `
+    Leads__Storage__Provider=AzureTable `
+    Leads__Storage__TableName=LeadSubmissions `
+    Leads__Storage__TableEndpoint='https://<storage-account>.table.core.windows.net/'
 ```
 
-The full App Service bootstrap will be consolidated later into the top-level Azure provisioning scripts. This delivery intentionally isolates the Storage/diagnostic slice first.
+The full App Service bootstrap is consolidated in later provisioning deliveries; this document covers the storage slice.
 
 ## Local development
 
@@ -140,4 +166,4 @@ No Azure resource is required for normal development:
 dotnet run --project ./src/LceWeb.Api/LceWeb.Api.csproj
 ```
 
-With no storage settings, the API loads JSON from `src/LceWeb.Api/diagnostics/` into the in-memory repository and exposes the same HTTP contract used in Azure.
+With no storage settings, diagnostic definitions load from `src/LceWeb.Api/diagnostics/` and accepted leads are stored in memory for the process lifetime.
