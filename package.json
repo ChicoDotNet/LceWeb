@@ -1,0 +1,8 @@
+{
+  "name": "lceweb",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:diagnostics": "node --test tests/js/*.test.js"
+  }
+}

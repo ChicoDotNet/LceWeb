@@ -1,0 +1,168 @@
+{
+  "id": "16f5812b-6a27-44f6-b5b4-557a720a6425",
+  "version": 1,
+  "isActive": true,
+  "name": "Operational readiness sample",
+  "copy": {
+    "introTitle": "Ubica rápidamente el estado de tu operación",
+    "introBody": "Responde unas preguntas breves para obtener una lectura inicial.",
+    "completionTitle": "Ya tenemos una primera lectura",
+    "completionBody": "El resultado es orientativo y sirve para preparar una conversación más útil."
+  },
+  "dimensions": [
+    {
+      "id": "readiness",
+      "label": "Preparación"
+    },
+    {
+      "id": "urgency",
+      "label": "Urgencia"
+    }
+  ],
+  "steps": [
+    {
+      "id": "context",
+      "order": 10,
+      "title": "Contexto",
+      "description": "Primero entendamos en qué momento estás.",
+      "questions": [
+        {
+          "id": "stage",
+          "order": 10,
+          "prompt": "¿En qué etapa está la operación?",
+          "type": "singleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "exploring",
+              "order": 10,
+              "label": "Apenas estoy explorando",
+              "scores": {
+                "readiness": 0,
+                "urgency": 0
+              }
+            },
+            {
+              "id": "planning",
+              "order": 20,
+              "label": "Ya estoy planeando",
+              "scores": {
+                "readiness": 1,
+                "urgency": 1
+              }
+            },
+            {
+              "id": "in-progress",
+              "order": 30,
+              "label": "Ya está en marcha",
+              "scores": {
+                "readiness": 2,
+                "urgency": 2
+              }
+            },
+            {
+              "id": "blocked",
+              "order": 40,
+              "label": "Está detenida o bloqueada",
+              "scores": {
+                "readiness": 1,
+                "urgency": 3
+              }
+            }
+          ]
+        },
+        {
+          "id": "priorities",
+          "order": 20,
+          "prompt": "¿Qué te preocupa más en este momento?",
+          "helpText": "Puedes elegir hasta dos opciones.",
+          "type": "multipleChoice",
+          "required": true,
+          "minSelections": 1,
+          "maxSelections": 2,
+          "options": [
+            {
+              "id": "cost",
+              "order": 10,
+              "label": "Costo",
+              "scores": {
+                "readiness": 1
+              }
+            },
+            {
+              "id": "time",
+              "order": 20,
+              "label": "Tiempo",
+              "scores": {
+                "urgency": 1
+              }
+            },
+            {
+              "id": "compliance",
+              "order": 30,
+              "label": "Cumplimiento",
+              "scores": {
+                "readiness": 1,
+                "urgency": 1
+              }
+            },
+            {
+              "id": "coordination",
+              "order": 40,
+              "label": "Coordinación entre participantes",
+              "scores": {
+                "readiness": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "order": 20,
+      "title": "Detalle",
+      "description": "Esta pregunta sólo aparece cuando ya existe una operación activa o bloqueada.",
+      "visibleWhen": {
+        "questionId": "stage",
+        "operator": "anyOf",
+        "values": ["in-progress", "blocked"]
+      },
+      "questions": [
+        {
+          "id": "blocker-detail",
+          "order": 10,
+          "prompt": "¿Qué situación concreta necesitas resolver?",
+          "type": "text",
+          "required": false,
+          "maxLength": 400,
+          "options": []
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "id": "readiness-low",
+      "dimensionId": "readiness",
+      "minScore": 0,
+      "maxScore": 1,
+      "label": "Exploración temprana",
+      "summary": "Conviene ordenar información y decisiones antes de ejecutar."
+    },
+    {
+      "id": "readiness-active",
+      "dimensionId": "readiness",
+      "minScore": 2,
+      "label": "Operación activa",
+      "summary": "Ya hay suficientes señales para preparar una revisión más específica."
+    },
+    {
+      "id": "urgency-high",
+      "dimensionId": "urgency",
+      "minScore": 3,
+      "label": "Atención prioritaria",
+      "summary": "La combinación de etapa y preocupaciones sugiere revisar la operación pronto."
+    }
+  ]
+}

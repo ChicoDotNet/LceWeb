@@ -1,0 +1,125 @@
+using System.Text;
+using System.Text.Json;
+using Azure;
+using Azure.Data.Tables;
+using LceWeb.Api.Diagnostics;
+
+namespace LceWeb.Api.Leads;
+
+public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
+    : ILeadSubmissionRepository
+{
+    private const int MaxSubmissionJsonBytes = 61440;
+    private const int MaxEmailErrorLength = 2048;
+    private readonly JsonSerializerOptions _serializerOptions = DiagnosticJson.CreateOptions();
+
+    public async ValueTask StoreAsync(
+        LeadSubmission submission,
+        CancellationToken cancellationToken = default)
+    {
+        var submissionJson = JsonSerializer.Serialize(submission, _serializerOptions);
+        var byteCount = Encoding.Unicode.GetByteCount(submissionJson);
+        if (byteCount > MaxSubmissionJsonBytes)
+        {
+            throw new InvalidDataException(
+                $"Lead submission {submission.Id:D} is {byteCount} UTF-16 bytes. SubmissionJson must remain below 60 KiB.");
+        }
+
+        var entity = new TableEntity(
+            submission.DiagnosticId.ToString("D"),
+            submission.Id.ToString("D"))
+        {
+            ["CreatedUtc"] = submission.CreatedUtc,
+            ["DefinitionVersion"] = submission.DefinitionVersion,
+            ["Name"] = submission.Contact.Name,
+            ["Email"] = submission.Contact.Email,
+            ["CallingCode"] = submission.Contact.Phone?.CallingCode,
+            ["PhoneNumber"] = submission.Contact.Phone?.Number,
+            ["UtmSource"] = submission.Acquisition.UtmSource,
+            ["UtmMedium"] = submission.Acquisition.UtmMedium,
+            ["UtmCampaign"] = submission.Acquisition.UtmCampaign,
+            ["PageUrl"] = submission.Acquisition.PageUrl,
+            ["EmailStatus"] = LeadEmailStatus.Pending.ToString(),
+            ["EmailStatusUpdatedUtc"] = submission.CreatedUtc,
+            ["EmailOperationId"] = string.Empty,
+            ["EmailError"] = string.Empty,
+            ["SubmissionJson"] = submissionJson
+        };
+
+        try
+        {
+            await tableClient.AddEntityAsync(entity, cancellationToken);
+        }
+        catch (RequestFailedException exception) when (exception.Status == StatusCodes.Status409Conflict)
+        {
+            throw new InvalidOperationException(
+                $"Lead submission {submission.Id:D} already exists.",
+                exception);
+        }
+    }
+
+    public async ValueTask<LeadSubmission?> GetAsync(
+        Guid diagnosticId,
+        Guid submissionId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await tableClient.GetEntityIfExistsAsync<TableEntity>(
+            diagnosticId.ToString("D"),
+            submissionId.ToString("D"),
+            cancellationToken: cancellationToken);
+
+        if (!response.HasValue || response.Value is null)
+        {
+            return null;
+        }
+
+        var entity = response.Value;
+        var submissionJson = entity.GetString("SubmissionJson");
+        if (string.IsNullOrWhiteSpace(submissionJson))
+        {
+            throw new InvalidDataException(
+                $"Lead submission entity {entity.PartitionKey}/{entity.RowKey} does not contain SubmissionJson.");
+        }
+
+        var submission = JsonSerializer.Deserialize<LeadSubmission>(submissionJson, _serializerOptions)
+            ?? throw new InvalidDataException(
+                $"Lead submission entity {entity.PartitionKey}/{entity.RowKey} contains invalid JSON.");
+
+        if (submission.DiagnosticId != diagnosticId || submission.Id != submissionId)
+        {
+            throw new InvalidDataException(
+                $"Lead submission entity {entity.PartitionKey}/{entity.RowKey} does not match its stored identifiers.");
+        }
+
+        return submission;
+    }
+
+    public async ValueTask UpdateEmailDeliveryAsync(
+        Guid diagnosticId,
+        Guid submissionId,
+        LeadEmailDeliveryState delivery,
+        CancellationToken cancellationToken = default)
+    {
+        var error = delivery.Error ?? string.Empty;
+        if (error.Length > MaxEmailErrorLength)
+        {
+            error = error[..MaxEmailErrorLength];
+        }
+
+        var entity = new TableEntity(
+            diagnosticId.ToString("D"),
+            submissionId.ToString("D"))
+        {
+            ["EmailStatus"] = delivery.Status.ToString(),
+            ["EmailStatusUpdatedUtc"] = delivery.UpdatedUtc,
+            ["EmailOperationId"] = delivery.ProviderOperationId ?? string.Empty,
+            ["EmailError"] = error
+        };
+
+        await tableClient.UpdateEntityAsync(
+            entity,
+            ETag.All,
+            TableUpdateMode.Merge,
+            cancellationToken);
+    }
+}
