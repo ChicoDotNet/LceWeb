@@ -10,6 +10,7 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
     : ILeadSubmissionRepository
 {
     private const int MaxSubmissionJsonBytes = 61440;
+    private const int MaxEmailErrorLength = 2048;
     private readonly JsonSerializerOptions _serializerOptions = DiagnosticJson.CreateOptions();
 
     public async ValueTask StoreAsync(
@@ -38,7 +39,10 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
             ["UtmMedium"] = submission.Acquisition.UtmMedium,
             ["UtmCampaign"] = submission.Acquisition.UtmCampaign,
             ["PageUrl"] = submission.Acquisition.PageUrl,
-            ["EmailStatus"] = "Pending",
+            ["EmailStatus"] = LeadEmailStatus.Pending.ToString(),
+            ["EmailStatusUpdatedUtc"] = submission.CreatedUtc,
+            ["EmailOperationId"] = string.Empty,
+            ["EmailError"] = string.Empty,
             ["SubmissionJson"] = submissionJson
         };
 
@@ -88,5 +92,34 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
         }
 
         return submission;
+    }
+
+    public async ValueTask UpdateEmailDeliveryAsync(
+        Guid diagnosticId,
+        Guid submissionId,
+        LeadEmailDeliveryState delivery,
+        CancellationToken cancellationToken = default)
+    {
+        var error = delivery.Error ?? string.Empty;
+        if (error.Length > MaxEmailErrorLength)
+        {
+            error = error[..MaxEmailErrorLength];
+        }
+
+        var entity = new TableEntity(
+            diagnosticId.ToString("D"),
+            submissionId.ToString("D"))
+        {
+            ["EmailStatus"] = delivery.Status.ToString(),
+            ["EmailStatusUpdatedUtc"] = delivery.UpdatedUtc,
+            ["EmailOperationId"] = delivery.ProviderOperationId ?? string.Empty,
+            ["EmailError"] = error
+        };
+
+        await tableClient.UpdateEntityAsync(
+            entity,
+            ETag.All,
+            TableUpdateMode.Merge,
+            cancellationToken);
     }
 }
