@@ -95,7 +95,6 @@ Outputs:
 - `LeadSubmissions` repository abstraction;
 - in-memory and Azure Table persistence;
 - searchable lead metadata plus complete canonical `SubmissionJson`;
-- `EmailStatus=Pending` reserved for notification delivery;
 - request body ceiling, per-IP rate limiting and honeypot;
 - machine-readable `contracts/lead-submission.schema.json`;
 - browser and API smoke tests including tampered-answer rejection.
@@ -109,21 +108,31 @@ Acceptance achieved:
 
 ## Delivery 5 — Azure Communication Services email
 
-Status: next.
+Status: complete.
 
 Outputs:
 
-- ACS Email integration;
-- recipient list read from App Service configuration;
-- sender configuration read from App Service configuration;
-- human-readable lead email containing contact data, landing/diagnostic identity, acquisition context, questions, answers and computed result;
-- persisted email delivery state/failure detail sufficient for retry/support.
+- `Azure.Communication.Email` integration behind `ILeadNotificationSender`;
+- disabled provider by default for local development and CI;
+- recipient list, sender address, subject prefix and ACS endpoint from App Service configuration;
+- preferred production authentication through `DefaultAzureCredential` / App Service Managed Identity;
+- plaintext + HTML lead email containing contact data, diagnostic identity/version, acquisition context, ordered questions, human-readable answers and server-computed results;
+- HTML encoding for user-controlled content;
+- lead-first flow: durable persistence precedes notification;
+- persisted `Pending`, `Disabled`, `Sent` or `Failed` email state;
+- ACS operation id and bounded error detail for troubleshooting;
+- `scripts/azure/provision-email.ps1` to provision/reuse ACS, Email Communication Services, an Azure Managed Domain and domain linking;
+- sender display name configured on the ACS Sender Username resource rather than as a misleading runtime setting;
+- `docs/EMAIL.md` operational guidance.
 
-Acceptance:
+Acceptance achieved:
 
 - a stored lead is never lost because email delivery fails;
-- successful submission produces a readable notification for all configured recipients;
-- secrets are not exposed to browser code or committed source.
+- notification failures are represented independently from the immutable lead JSON;
+- successful ACS send operation records its operation id;
+- all configured recipients receive the same readable notification payload;
+- no ACS credential is required in browser code or committed source;
+- App Service can use Managed Identity for ACS authentication.
 
 ## Delivery 6 — migrate all four pages
 
@@ -139,14 +148,18 @@ Outputs:
 
 ## Delivery 7 — Azure CLI / PowerShell provisioning
 
-Status: partial; Storage scripts exist and full environment consolidation remains.
+Status: partial; Storage and ACS Email scripts exist. This is the next executable infrastructure slice while production HTML remains unavailable.
 
 Outputs under `scripts/azure/`:
 
 - base-resource bootstrap;
-- DNS configuration;
-- Communication Services Email configuration;
-- App Service settings/identity/RBAC;
+- App Service Plan + App Service;
+- system-assigned Managed Identity;
+- Storage/RBAC integration;
+- Communication Services Email/RBAC integration;
+- Azure DNS zone and documented registrar-delegation boundary;
+- custom email-domain DNS verification/authentication workflow;
+- consolidated App Service settings;
 - diagnostic seed;
 - deployment;
 - post-deployment verification.
