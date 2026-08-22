@@ -153,7 +153,7 @@ It prints both diagnostic and lead App Service settings. The same `Storage Table
 The current API applies:
 
 - a 128 KiB request-body ceiling at Kestrel level;
-- a fixed-window rate limit of 10 lead submissions per minute per application instance/partition policy;
+- a fixed-window rate limit of 10 lead submissions per minute, partitioned by the remote IP observed by the application instance;
 - a honeypot field;
 - full server-side revalidation.
 
