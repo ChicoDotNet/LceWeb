@@ -16,6 +16,8 @@ diagnostic:completed
   -> return submission id + authoritative result
 ```
 
+The machine-readable public request contract is `contracts/lead-submission.schema.json`.
+
 ## POST /api/leads
 
 Example:
