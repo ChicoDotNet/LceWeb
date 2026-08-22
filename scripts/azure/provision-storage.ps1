@@ -10,6 +10,8 @@ param(
 
     [string]$TableName = "DiagnosticDefinitions",
 
+    [string]$LeadTableName = "LeadSubmissions",
+
     [string]$AppServicePrincipalId,
 
     [string]$OperatorObjectId,
@@ -60,6 +62,39 @@ function Ensure-TableDataRole {
             --scope $Scope `
             --output none
     }
+}
+
+function Ensure-Table {
+    param(
+        [Parameter(Mandatory = $true)][string]$AccountName,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][bool]$HasOperatorAccess
+    )
+
+    $attempts = 0
+    while ($attempts -lt 6) {
+        $attempts++
+        & az storage table create `
+            --account-name $AccountName `
+            --name $Name `
+            --auth-mode login `
+            --output none
+
+        if ($LASTEXITCODE -eq 0) {
+            return
+        }
+
+        if (-not $HasOperatorAccess) {
+            throw "Table creation requires data-plane access. Rerun with -OperatorObjectId after granting 'Storage Table Data Contributor'."
+        }
+
+        if ($attempts -lt 6) {
+            Write-Host "Waiting for Table Storage RBAC propagation for '$Name' (attempt $attempts/6)..."
+            Start-Sleep -Seconds 10
+        }
+    }
+
+    throw "Could not create or verify table '$Name' after waiting for RBAC propagation."
 }
 
 if ($SubscriptionId) {
@@ -131,34 +166,15 @@ if ($AppServicePrincipalId) {
         -Scope $storageId
 }
 
-$attempts = 0
-$created = $false
-while (-not $created -and $attempts -lt 6) {
-    $attempts++
-    & az storage table create `
-        --account-name $StorageAccountName `
-        --name $TableName `
-        --auth-mode login `
-        --output none
+Ensure-Table `
+    -AccountName $StorageAccountName `
+    -Name $TableName `
+    -HasOperatorAccess ([bool]$OperatorObjectId)
 
-    if ($LASTEXITCODE -eq 0) {
-        $created = $true
-        break
-    }
-
-    if (-not $OperatorObjectId) {
-        throw "Table creation requires data-plane access. Rerun with -OperatorObjectId after granting 'Storage Table Data Contributor'."
-    }
-
-    if ($attempts -lt 6) {
-        Write-Host "Waiting for Table Storage RBAC propagation (attempt $attempts/6)..."
-        Start-Sleep -Seconds 10
-    }
-}
-
-if (-not $created) {
-    throw "Could not create or verify table '$TableName' after waiting for RBAC propagation."
-}
+Ensure-Table `
+    -AccountName $StorageAccountName `
+    -Name $LeadTableName `
+    -HasOperatorAccess ([bool]$OperatorObjectId)
 
 $tableEndpoint = & az storage account show `
     --resource-group $ResourceGroupName `
@@ -167,11 +183,15 @@ $tableEndpoint = & az storage account show `
     --output tsv
 
 Write-Host "Storage ready."
-Write-Host "  Account:        $StorageAccountName"
-Write-Host "  Table:          $TableName"
-Write-Host "  Table endpoint: $tableEndpoint"
+Write-Host "  Account:           $StorageAccountName"
+Write-Host "  Diagnostic table:  $TableName"
+Write-Host "  Lead table:        $LeadTableName"
+Write-Host "  Table endpoint:    $tableEndpoint"
 Write-Host ""
 Write-Host "App Service settings:"
 Write-Host "  Diagnostics__Storage__Provider=AzureTable"
 Write-Host "  Diagnostics__Storage__TableName=$TableName"
 Write-Host "  Diagnostics__Storage__TableEndpoint=$tableEndpoint"
+Write-Host "  Leads__Storage__Provider=AzureTable"
+Write-Host "  Leads__Storage__TableName=$LeadTableName"
+Write-Host "  Leads__Storage__TableEndpoint=$tableEndpoint"
