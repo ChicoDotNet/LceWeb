@@ -10,7 +10,6 @@ public sealed class LeadEmailOptions
     public string? Endpoint { get; init; }
     public string? ConnectionString { get; init; }
     public string? SenderAddress { get; init; }
-    public string SenderDisplayName { get; init; } = "LCE Comercial";
     public string SubjectPrefix { get; init; } = "Nuevo prospecto LCE";
     public IReadOnlyList<string> Recipients { get; init; } = [];
 }
