@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using LceWeb.Api.Diagnostics;
 using LceWeb.Api.Leads;
+using LceWeb.Api.Notifications;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,7 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.ConfigureHttpJsonOptions(options => DiagnosticJson.Configure(options.SerializerOptions));
 builder.Services.AddDiagnosticDefinitionRepository(builder.Configuration, builder.Environment);
 builder.Services.AddLeadSubmissionRepository(builder.Configuration);
+builder.Services.AddLeadNotifications(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddRateLimiter(options =>
 {
@@ -74,7 +76,10 @@ app.MapPost(
             LeadSubmissionRequest request,
             IDiagnosticDefinitionRepository diagnosticRepository,
             ILeadSubmissionRepository leadRepository,
+            ILeadNotificationSender notificationSender,
             TimeProvider timeProvider,
+            IHostApplicationLifetime applicationLifetime,
+            ILoggerFactory loggerFactory,
             CancellationToken cancellationToken) =>
         {
             if (!string.IsNullOrWhiteSpace(request.Website))
@@ -138,6 +143,62 @@ app.MapPost(
             };
 
             await leadRepository.StoreAsync(submission, cancellationToken);
+
+            var logger = loggerFactory.CreateLogger("LeadNotifications");
+            LeadNotificationResult notificationResult;
+            try
+            {
+                notificationResult = await notificationSender.SendAsync(
+                    definition,
+                    submission,
+                    applicationLifetime.ApplicationStopping);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(
+                    exception,
+                    "Unexpected email notification failure for lead {LeadId}.",
+                    submission.Id);
+                notificationResult = LeadNotificationResult.Failed("Unexpected email notification failure.");
+            }
+
+            var emailStatus = notificationResult.Status switch
+            {
+                LeadNotificationStatus.Disabled => LeadEmailStatus.Disabled,
+                LeadNotificationStatus.Sent => LeadEmailStatus.Sent,
+                LeadNotificationStatus.Failed => LeadEmailStatus.Failed,
+                _ => LeadEmailStatus.Failed
+            };
+
+            try
+            {
+                await leadRepository.UpdateEmailDeliveryAsync(
+                    submission.DiagnosticId,
+                    submission.Id,
+                    new LeadEmailDeliveryState
+                    {
+                        Status = emailStatus,
+                        UpdatedUtc = timeProvider.GetUtcNow(),
+                        ProviderOperationId = notificationResult.ProviderOperationId,
+                        Error = notificationResult.Error
+                    },
+                    applicationLifetime.ApplicationStopping);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(
+                    exception,
+                    "Lead {LeadId} was stored, but its email delivery status could not be updated.",
+                    submission.Id);
+            }
+
+            if (notificationResult.Status == LeadNotificationStatus.Failed)
+            {
+                logger.LogWarning(
+                    "Lead {LeadId} was stored but email notification failed: {EmailError}",
+                    submission.Id,
+                    notificationResult.Error);
+            }
 
             return Results.Json(
                 new LeadSubmissionResponse
