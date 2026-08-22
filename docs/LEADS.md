@@ -13,10 +13,12 @@ diagnostic:completed
   -> reject unknown/hidden/tampered answers
   -> recompute scores and result bands in C#
   -> persist LeadSubmission
+  -> notify configured recipients
+  -> persist email delivery state
   -> return submission id + authoritative result
 ```
 
-The machine-readable public request contract is `contracts/lead-submission.schema.json`.
+Lead persistence happens before email delivery. A notification failure does not discard the prospect submission.
 
 ## POST /api/leads
 
@@ -61,7 +63,7 @@ Example:
 
 `website` is a honeypot and legitimate browser code must leave it empty.
 
-The endpoint returns `201 Created` only after the submission has been stored. The response contains the submission id and server-computed scores/results.
+The endpoint returns `201 Created` after the submission has been durably stored. The response contains the submission id and server-computed scores/results. Notification delivery is deliberately not used as the durability boundary for the lead.
 
 ## Validation
 
@@ -121,34 +123,41 @@ Leads__Storage__TableEndpoint=https://<storage-account>.table.core.windows.net/
 ## LeadSubmissions table
 
 ```text
-PartitionKey      = diagnostic GUID
-RowKey            = submission GUID
-CreatedUtc        = DateTimeOffset
-DefinitionVersion = Int32
-Name              = searchable contact name
-Email             = searchable contact email
-CallingCode       = optional
-PhoneNumber       = optional
-UtmSource         = optional
-UtmMedium         = optional
-UtmCampaign       = optional
-PageUrl           = optional
-EmailStatus       = Pending
-SubmissionJson    = canonical complete lead submission
+PartitionKey           = diagnostic GUID
+RowKey                 = submission GUID
+CreatedUtc             = DateTimeOffset
+DefinitionVersion      = Int32
+Name                   = searchable contact name
+Email                  = searchable contact email
+CallingCode            = optional
+PhoneNumber            = optional
+UtmSource              = optional
+UtmMedium              = optional
+UtmCampaign            = optional
+PageUrl                = optional
+EmailStatus            = Pending | Disabled | Sent | Failed
+EmailStatusUpdatedUtc  = DateTimeOffset
+EmailOperationId       = ACS operation id when available
+EmailError             = bounded failure detail when available
+SubmissionJson         = canonical complete lead submission
 ```
 
 The table stores metadata columns for support/search plus the complete canonical JSON. `SubmissionJson` has the same conservative 60 KiB guard used for diagnostic definition JSON.
 
-`EmailStatus=Pending` is reserved for the Azure Communication Services email delivery increment.
+The lead itself is immutable evidence. Email transport state is maintained in separate Table properties and updated with a merge operation after the notification attempt.
+
+See [`EMAIL.md`](EMAIL.md) for Azure Communication Services configuration and the precise meaning of `Sent`.
 
 ## Provisioning
 
-`scripts/azure/provision-storage.ps1` now creates both tables by default:
+`scripts/azure/provision-storage.ps1` creates both tables by default:
 
 - `DiagnosticDefinitions`;
 - `LeadSubmissions`.
 
 It prints both diagnostic and lead App Service settings. The same `Storage Table Data Contributor` assignment covers both tables because the role is scoped to the Storage Account.
+
+Email resources are provisioned separately by `scripts/azure/provision-email.ps1` so Storage and ACS can be operated/tested independently before the final environment bootstrap is consolidated.
 
 ## Public-endpoint protections
 
