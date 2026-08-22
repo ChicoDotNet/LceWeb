@@ -136,7 +136,7 @@ Acceptance achieved:
 
 ## Delivery 6 — migrate all four pages
 
-Status: waiting for production HTML files in this repository.
+Status: blocked only by the production HTML files not yet being present in this repository.
 
 Outputs:
 
@@ -146,9 +146,11 @@ Outputs:
 - existing visual/song differences remain intact;
 - contact completion uses the shared lead mechanism.
 
-## Delivery 7 — Azure CLI / PowerShell provisioning
+Once the four source pages are added, this delivery can proceed without redesigning the shared backend/runtime built in Deliveries 1–5.
 
-Status: partial; Storage and ACS Email scripts exist. This is the next executable infrastructure slice while production HTML remains unavailable.
+## Delivery 7 — consolidated Azure CLI / PowerShell provisioning
+
+Status: next executable delivery while Delivery 6 is waiting on HTML. Storage and ACS Email focused scripts already exist.
 
 Outputs under `scripts/azure/`:
 
