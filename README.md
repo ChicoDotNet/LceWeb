@@ -126,6 +126,8 @@ Current focused scripts include:
 - `scripts/azure/seed-diagnostics.ps1`;
 - `scripts/azure/provision-email.ps1`.
 
+The next executable infrastructure slice consolidates App Service, identity/RBAC, Storage, ACS and Azure DNS/custom-domain setup. Migration of the four production pages can proceed as soon as their source HTML files are added to this repository.
+
 Start with:
 
 - [`docs/AZURE-STORAGE.md`](docs/AZURE-STORAGE.md)
