@@ -47,9 +47,12 @@ public sealed class AzureTableDiagnosticDefinitionRepository(TableClient tableCl
             rowKey,
             cancellationToken: cancellationToken);
 
-        return response.HasValue
-            ? Deserialize(response.Value, diagnosticId, version)
-            : null;
+        if (!response.HasValue || response.Value is null)
+        {
+            return null;
+        }
+
+        return Deserialize(response.Value, diagnosticId, version);
     }
 
     private DiagnosticDefinition Deserialize(
