@@ -48,26 +48,31 @@ The GET endpoint resolves the highest version. Lead submission resolves the exac
 
 ## LeadSubmissions layout
 
-Each accepted lead is one immutable submission entity:
+Each accepted lead is one durable submission entity:
 
 ```text
-PartitionKey      = diagnostic GUID
-RowKey            = submission GUID
-CreatedUtc        = DateTimeOffset
-DefinitionVersion = Int32
-Name              = searchable contact name
-Email             = searchable contact email
-CallingCode       = optional
-PhoneNumber       = optional
-UtmSource         = optional
-UtmMedium         = optional
-UtmCampaign       = optional
-PageUrl           = optional
-EmailStatus       = Pending
-SubmissionJson    = canonical complete lead submission
+PartitionKey           = diagnostic GUID
+RowKey                 = submission GUID
+CreatedUtc             = DateTimeOffset
+DefinitionVersion      = Int32
+Name                   = searchable contact name
+Email                  = searchable contact email
+CallingCode            = optional
+PhoneNumber            = optional
+UtmSource              = optional
+UtmMedium              = optional
+UtmCampaign            = optional
+PageUrl                = optional
+EmailStatus            = Pending | Disabled | Sent | Failed
+EmailStatusUpdatedUtc  = DateTimeOffset
+EmailOperationId       = ACS operation id when available
+EmailError             = bounded failure detail when available
+SubmissionJson         = canonical complete lead submission
 ```
 
-`EmailStatus=Pending` is reserved for the Azure Communication Services notification delivery increment.
+`SubmissionJson` is the captured lead evidence. Email transport state is stored separately and updated with a Table merge after the notification attempt, so notification delivery never rewrites the canonical submission.
+
+See [`LEADS.md`](LEADS.md) for the complete lead flow and [`EMAIL.md`](EMAIL.md) for notification configuration and delivery-state semantics.
 
 ## JSON property size
 
@@ -156,7 +161,7 @@ az webapp config appsettings set `
     Leads__Storage__TableEndpoint='https://<storage-account>.table.core.windows.net/'
 ```
 
-The full App Service bootstrap is consolidated in later provisioning deliveries; this document covers the storage slice.
+Email resources/settings are documented in [`EMAIL.md`](EMAIL.md). The full App Service bootstrap will consolidate Storage, ACS and DNS in a later provisioning delivery.
 
 ## Local development
 
@@ -166,4 +171,4 @@ No Azure resource is required for normal development:
 dotnet run --project ./src/LceWeb.Api/LceWeb.Api.csproj
 ```
 
-With no storage settings, diagnostic definitions load from `src/LceWeb.Api/diagnostics/` and accepted leads are stored in memory for the process lifetime.
+With no storage settings, diagnostic definitions load from `src/LceWeb.Api/diagnostics/` and accepted leads are stored in memory for the process lifetime. Email delivery is disabled by default unless explicitly configured.
