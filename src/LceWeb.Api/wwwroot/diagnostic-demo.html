@@ -19,9 +19,16 @@
     .lce-diagnostic__text { width: 100%; min-height: 7rem; box-sizing: border-box; }
     .lce-diagnostic__actions { display: flex; gap: .75rem; justify-content: flex-end; }
     .lce-diagnostic__button { padding: .7rem 1rem; cursor: pointer; }
-    .lce-diagnostic__errors { color: #b00020; }
+    .lce-diagnostic__errors, .lce-lead__errors { color: #b00020; }
     .lce-diagnostic__results { display: grid; gap: 1rem; }
     .lce-diagnostic__result { border: 1px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: .5rem; padding: 1rem; }
+    #lead-capture { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid color-mix(in srgb, CanvasText 20%, transparent); }
+    .lce-lead { display: grid; gap: 1rem; }
+    .lce-lead__field { display: grid; gap: .35rem; }
+    .lce-lead__field input { box-sizing: border-box; width: 100%; padding: .65rem; }
+    .lce-lead__phone { display: grid; grid-template-columns: minmax(7rem, .35fr) 1fr; gap: .75rem; }
+    .lce-lead__submit { justify-self: start; padding: .7rem 1rem; cursor: pointer; }
+    .lce-lead__honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
     #event-output { margin-top: 2rem; padding: 1rem; overflow: auto; background: color-mix(in srgb, CanvasText 8%, Canvas); }
   </style>
 </head>
@@ -36,17 +43,30 @@
       data-diagnostic-api-base=""
       data-diagnostic-show-scores="true"></div>
 
+    <div id="lead-capture" hidden></div>
+
     <h2>Evento de finalización</h2>
-    <pre id="event-output">Completa el diagnóstico para inspeccionar el payload que consumirá el futuro formulario de lead.</pre>
+    <pre id="event-output">Completa el diagnóstico para inspeccionar el payload previo al formulario de lead.</pre>
   </main>
 
   <script type="module">
     import "/js/diagnostics/diagnostic-runtime.js";
+    import { attachLeadCapture } from "/js/leads/lead-capture.js";
 
     const root = document.querySelector("#diagnostic-demo");
+    const formRoot = document.querySelector("#lead-capture");
     const output = document.querySelector("#event-output");
 
+    attachLeadCapture({
+      diagnosticRoot: root,
+      formRoot
+    });
+
     root.addEventListener("diagnostic:completed", event => {
+      output.textContent = JSON.stringify(event.detail, null, 2);
+    });
+
+    formRoot.addEventListener("lead:submitted", event => {
       output.textContent = JSON.stringify(event.detail, null, 2);
     });
   </script>
