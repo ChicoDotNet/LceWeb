@@ -10,4 +10,10 @@ public interface ILeadSubmissionRepository
         Guid diagnosticId,
         Guid submissionId,
         CancellationToken cancellationToken = default);
+
+    ValueTask UpdateEmailDeliveryAsync(
+        Guid diagnosticId,
+        Guid submissionId,
+        LeadEmailDeliveryState delivery,
+        CancellationToken cancellationToken = default);
 }
