@@ -64,26 +64,27 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
             submissionId.ToString("D"),
             cancellationToken: cancellationToken);
 
-        if (!response.HasValue)
+        if (!response.HasValue || response.Value is null)
         {
             return null;
         }
 
-        var submissionJson = response.Value.GetString("SubmissionJson");
+        var entity = response.Value;
+        var submissionJson = entity.GetString("SubmissionJson");
         if (string.IsNullOrWhiteSpace(submissionJson))
         {
             throw new InvalidDataException(
-                $"Lead submission entity {response.Value.PartitionKey}/{response.Value.RowKey} does not contain SubmissionJson.");
+                $"Lead submission entity {entity.PartitionKey}/{entity.RowKey} does not contain SubmissionJson.");
         }
 
         var submission = JsonSerializer.Deserialize<LeadSubmission>(submissionJson, _serializerOptions)
             ?? throw new InvalidDataException(
-                $"Lead submission entity {response.Value.PartitionKey}/{response.Value.RowKey} contains invalid JSON.");
+                $"Lead submission entity {entity.PartitionKey}/{entity.RowKey} contains invalid JSON.");
 
         if (submission.DiagnosticId != diagnosticId || submission.Id != submissionId)
         {
             throw new InvalidDataException(
-                $"Lead submission entity {response.Value.PartitionKey}/{response.Value.RowKey} does not match its stored identifiers.");
+                $"Lead submission entity {entity.PartitionKey}/{entity.RowKey} does not match its stored identifiers.");
         }
 
         return submission;
