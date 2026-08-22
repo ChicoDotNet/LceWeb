@@ -30,7 +30,6 @@ Production uses:
 Email__Provider=AzureCommunicationServices
 Email__Endpoint=https://<acs-resource>.communication.azure.com
 Email__SenderAddress=<mail-from-address>
-Email__SenderDisplayName=LCE Comercial
 Email__Recipients=ventas@example.com;angelica@example.com
 Email__SubjectPrefix=Nuevo prospecto LCE
 ```
@@ -40,6 +39,8 @@ Email__SubjectPrefix=Nuevo prospecto LCE
 The preferred production authentication path is `DefaultAzureCredential`, which resolves to the App Service Managed Identity. No ACS access key is required in App Service settings.
 
 `Email__ConnectionString` exists only as an emergency/local escape hatch. Do not commit production connection strings.
+
+The sender display name belongs to the ACS domain Sender Username resource. `provision-email.ps1` configures it there; it is deliberately **not** presented as an App Service setting because the .NET email payload sends the verified sender address, not a runtime display-name override.
 
 ## Email contents
 
@@ -108,7 +109,7 @@ The script:
 4. creates/reuses `AzureManagedDomain`;
 5. links that domain to the Communication Services resource;
 6. resolves the generated MailFrom sender address;
-7. optionally applies the sender display name;
+7. optionally applies the sender display name to the ACS Sender Username resource;
 8. assigns the App Service Managed Identity the ACS email-sender role when a principal id is supplied;
 9. prints the App Service settings required by the application.
 
