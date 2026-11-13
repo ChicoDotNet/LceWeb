@@ -34,15 +34,19 @@ builder.Services.AddRateLimiter(options =>
 var app = builder.Build();
 
 var leadStorage = app.Services.GetRequiredService<LeadStorageOptions>();
-// Never accept public leads with in-memory storage in a published environment.
-// Explicit opt-in is required after privacy, persistence and email checks.
+// Production is fail-closed: Azure Tables, both operator switches, and a published
+// approval version are required. Development keeps isolated CI fixtures available.
+var privacyNoticeVersion = app.Environment.IsDevelopment()
+    ? "development-test"
+    : builder.Configuration["Leads:PrivacyNoticeVersion"]?.Trim();
 var publicLeadCaptureEnabled = app.Environment.IsDevelopment() ||
     (string.Equals(
         leadStorage.Provider,
         LeadStorageOptions.AzureTableProvider,
         StringComparison.OrdinalIgnoreCase) &&
      builder.Configuration.GetValue<bool>("Leads:PublicCaptureEnabled") &&
-     builder.Configuration.GetValue<bool>("Leads:PrivacyNoticeApproved"));
+     builder.Configuration.GetValue<bool>("Leads:PrivacyNoticeApproved") &&
+     !string.IsNullOrWhiteSpace(privacyNoticeVersion));
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -50,7 +54,11 @@ app.UseRateLimiter();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
-app.MapGet("/api/public-capabilities", () => Results.Ok(new { leadCaptureEnabled = publicLeadCaptureEnabled }))
+app.MapGet("/api/public-capabilities", () => Results.Ok(new
+    {
+        leadCaptureEnabled = publicLeadCaptureEnabled,
+        privacyNoticeVersion = publicLeadCaptureEnabled ? privacyNoticeVersion : null
+    }))
     .WithName("GetPublicCapabilities");
 
 app.MapGet(
@@ -104,6 +112,18 @@ app.MapPost(
                     detail: "Contacta a LCE por correo o teléfono mientras habilitamos el registro seguro.");
             }
 
+            // The browser checkbox is not evidence on its own. Require the
+            // exact published notice revision and persist a server-side timestamp.
+            if (!request.PrivacyAccepted ||
+                !string.Equals(request.PrivacyNoticeVersion, privacyNoticeVersion, StringComparison.Ordinal))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["privacyAccepted"] = ["Debes aceptar el aviso de privacidad vigente para enviar la solicitud."],
+                    ["privacyNoticeVersion"] = ["La versión del aviso no coincide con la versión publicada. Recarga la página."]
+                });
+            }
+
             if (!string.IsNullOrWhiteSpace(request.Website))
             {
                 return Results.Accepted(value: new { accepted = true });
@@ -155,6 +175,8 @@ app.MapPost(
             {
                 Id = Guid.NewGuid(),
                 CreatedUtc = timeProvider.GetUtcNow(),
+                PrivacyNoticeVersion = privacyNoticeVersion,
+                PrivacyAcceptedUtc = timeProvider.GetUtcNow(),
                 DiagnosticId = definition.Id,
                 DefinitionVersion = definition.Version,
                 Contact = evaluation.Contact!,
