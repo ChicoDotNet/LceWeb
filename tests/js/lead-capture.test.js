@@ -59,3 +59,16 @@ test("buildLeadSubmissionPayload omits phone when the optional number is empty",
 
   assert.equal(payload.contact.phone, null);
 });
+
+
+test("lead submission includes the server-approved notice revision and explicit consent only", () => {
+  const payload = buildLeadSubmissionPayload(
+    { diagnosticId: "16f5812b-6a27-44f6-b5b4-557a720a6425", definitionVersion: 1, answers: {} },
+    { name: "Demo", email: "demo@example.com", phoneNumber: "", website: "" },
+    {},
+    "2026-11-13-v1",
+    true);
+  assert.equal(payload.privacyAccepted, true);
+  assert.equal(payload.privacyNoticeVersion, "2026-11-13-v1");
+  assert.equal("privacyAcceptedUtc" in payload, false, "Only the server can assign acceptance timestamps");
+});

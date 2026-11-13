@@ -42,7 +42,7 @@ test("consent is required before Clarity bundle is even fetched", () => {
 
 test("sensitive questionnaire and contact are masked, contact requires confirmation", () => {
   assert.match(diagnostic, /data-clarity-mask/);
-  assert.match(lead, /<form class="lce-lead" data-clarity-mask/);
+  assert.match(lead, /<form class="lce-lead(?: clarity-mask)?" data-clarity-mask/);
   assert.match(lead, /name="privacyAgreement" type="checkbox" required/);
   assert.match(lead, /\/privacidad\.html/);
   assert.match(privacy, /no sustituye el aviso de privacidad integral/i);

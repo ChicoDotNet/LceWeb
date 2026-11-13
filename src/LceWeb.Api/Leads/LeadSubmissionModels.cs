@@ -6,6 +6,8 @@ public sealed record LeadSubmissionRequest
 {
     public Guid DiagnosticId { get; init; }
     public int DefinitionVersion { get; init; }
+    public bool PrivacyAccepted { get; init; }
+    public string? PrivacyNoticeVersion { get; init; }
     public required LeadContactRequest Contact { get; init; }
     public IReadOnlyList<LeadAnswerRequest> Answers { get; init; } = [];
     public LeadAcquisitionRequest? Acquisition { get; init; }
@@ -88,6 +90,8 @@ public sealed record LeadSubmission
 {
     public Guid Id { get; init; }
     public DateTimeOffset CreatedUtc { get; init; }
+    public string? PrivacyNoticeVersion { get; init; }
+    public DateTimeOffset? PrivacyAcceptedUtc { get; init; }
     public Guid DiagnosticId { get; init; }
     public int DefinitionVersion { get; init; }
     public required LeadContact Contact { get; init; }

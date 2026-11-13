@@ -15,6 +15,7 @@ if (root && nextStep) {
 // Discover server permissions BEFORE the diagnostic engine mounts, so the
 // lead:ready listener cannot miss a fast completion event.
 let leadCaptureEnabled = false;
+let privacyNoticeVersion = null;
 try {
   const response = await fetch("/api/public-capabilities", {
     cache: "no-store",
@@ -23,15 +24,16 @@ try {
   if (response.ok) {
     const capabilities = await response.json();
     leadCaptureEnabled = capabilities.leadCaptureEnabled === true;
+    privacyNoticeVersion = typeof capabilities.privacyNoticeVersion === "string" ? capabilities.privacyNoticeVersion : null;
   }
 } catch {
   // Fail closed: a damaged capabilities endpoint must not expose lead form.
 }
 
-if (root && formRoot && leadCaptureEnabled) {
+if (root && formRoot && leadCaptureEnabled && privacyNoticeVersion) {
   try {
     const { attachLeadCapture } = await import("/js/leads/lead-capture.js");
-    attachLeadCapture({ diagnosticRoot: root, formRoot });
+    attachLeadCapture({ diagnosticRoot: root, formRoot, privacyNoticeVersion });
   } catch {
     formRoot.hidden = true;
   }
