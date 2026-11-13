@@ -151,15 +151,11 @@ $entity = @(
     "Name=$([string]$definition.name)", "DefinitionJson=$json"
 )
 # Idempotent: preserve any previously seeded v1 instead of replacing it.
-$existingVersion = $null
-for ($attempt=1; $attempt -le 8; $attempt++) {
-    $existingVersion = & az storage entity show --account-name $StorageAccountName --table-name $DiagnosticTable --auth-mode login --partition-key $diagnosticId --row-key "v0000000001" --select "Version" --query "Version" -o tsv --only-show-errors 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "[OK] Diagnóstico v1 ya existe; no será reemplazado."
-        Write-Host "[OK] I05 preparada sin activar la captura pública."
-        exit 0
-    }
-    if ($attempt -lt 8) { Start-Sleep -Seconds 10 }
+& az storage entity show --account-name $StorageAccountName --table-name $DiagnosticTable --auth-mode login --partition-key $diagnosticId --row-key "v0000000001" --select "Version" -o none --only-show-errors 2>$null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "[OK] Diagnóstico v1 ya existe; no será reemplazado."
+    Write-Host "[OK] I05 preparada sin activar la captura pública."
+    exit 0
 }
 $seeded = $false
 for ($attempt=1; $attempt -le 8; $attempt++) {
