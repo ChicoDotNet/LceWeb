@@ -1,0 +1,55 @@
+name: LCE package - .NET 10
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'src/**'
+      - '.github/workflows/lce-package.yml'
+  push:
+    branches:
+      - features/i01-lce-azure-preflight
+    paths:
+      - 'src/**'
+      - '.github/workflows/lce-package.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore and publish
+        run: |
+          dotnet restore ./src/LceWeb.Api/LceWeb.Api.csproj
+          dotnet publish ./src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-restore --output "$RUNNER_TEMP/lce-publish"
+
+      - name: Verify publish output
+        run: |
+          test -f "$RUNNER_TEMP/lce-publish/LceWeb.Api.dll"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/diagnostic-demo.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/js/diagnostics/diagnostic-runtime.js"
+
+      - name: Create deployment ZIP
+        run: |
+          cd "$RUNNER_TEMP/lce-publish"
+          zip -q -r "$GITHUB_WORKSPACE/lceweb.zip" .
+          unzip -l "$GITHUB_WORKSPACE/lceweb.zip" | grep -q 'LceWeb.Api.dll'
+          sha256sum "$GITHUB_WORKSPACE/lceweb.zip"
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lceweb-package
+          path: lceweb.zip
+          if-no-files-found: error
+          retention-days: 7
