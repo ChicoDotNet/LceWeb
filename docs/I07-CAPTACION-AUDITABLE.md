@@ -48,7 +48,7 @@ Antes o después de desplegar I07:
     Invoke-RestMethod "$base/api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425" | Select-Object name,version,isActive
     az storage entity show --account-name lcemuruscommonst --table-name LceDiagnosticDefinitions --partition-key 16f5812b-6a27-44f6-b5b4-557a720a6425 --row-key v0000000001 --auth-mode login --query "{Version:Version,Activo:IsActive}" -o json
 
-Public-capabilities esperado mientras no exista aviso integral aprobado: {"leadCaptureEnabled":false,"privacyNoticeVersion":null}.
+Public-capabilities esperado mientras no exista aviso integral aprobado: `{"leadCaptureEnabled":false}`. Según la configuración del serializador, `privacyNoticeVersion` puede omitirse cuando es nulo.
 
 Puedes comprobar que POST /api/leads sigue cerrado, usando exclusivamente datos ficticios y sin guardar leads:
 
