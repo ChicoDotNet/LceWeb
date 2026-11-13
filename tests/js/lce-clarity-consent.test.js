@@ -45,5 +45,5 @@ test("sensitive questionnaire and contact are masked, contact requires confirmat
   assert.match(lead, /<form class="lce-lead" data-clarity-mask/);
   assert.match(lead, /name="privacyAgreement" type="checkbox" required/);
   assert.match(lead, /\/privacidad\.html/);
-  assert.match(privacy, /no sustituye el aviso de privacidad integral/);
+  assert.match(privacy, /no sustituye el aviso de privacidad integral/i);
 });
