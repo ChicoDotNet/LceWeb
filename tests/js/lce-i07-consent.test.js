@@ -57,6 +57,6 @@ test("operator activation is gated, preview by default and rejects still-draft l
   assert.match(activate, /legalPlaceholdersPresent/);
   assert.match(activate, /data-lce-privacy-revision=/);
   assert.match(activate, /Rollback|rollback|roll.?back/i);
-  assert.match(notice, /Pendiente antes de activar el formulario/);
-  assert.doesNotMatch(notice, /data-lce-privacy-revision=/);
+  assert.match(notice, /Aviso de privacidad integral/);
+  assert.match(notice, /data-lce-privacy-revision="2026-11-13-lce-diagnostico-v1"/);
 });
