@@ -3,6 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:diagnostics": "node --test tests/js/*.test.js"
+    "test:diagnostics": "node --test tests/js/*.test.js",
+    "build:clarity": "esbuild src/LceWeb.Api/client/clarity-client.js --bundle --format=esm --platform=browser --target=es2020 --minify --outfile=src/LceWeb.Api/wwwroot/assets/clarity-bundle.js"
+  },
+  "dependencies": {
+    "@microsoft/clarity": "1.0.2"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.0"
   }
 }
