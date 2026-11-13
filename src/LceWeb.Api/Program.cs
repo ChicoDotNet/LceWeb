@@ -33,11 +33,24 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+var leadStorage = app.Services.GetRequiredService<LeadStorageOptions>();
+// Never accept public leads with in-memory storage in a published environment.
+// Explicit opt-in is required after privacy, persistence and email checks.
+var publicLeadCaptureEnabled = app.Environment.IsDevelopment() ||
+    (string.Equals(
+        leadStorage.Provider,
+        LeadStorageOptions.AzureTableProvider,
+        StringComparison.OrdinalIgnoreCase) &&
+     builder.Configuration.GetValue<bool>("Leads:PublicCaptureEnabled"));
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseRateLimiter();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+app.MapGet("/api/public-capabilities", () => Results.Ok(new { leadCaptureEnabled = publicLeadCaptureEnabled }))
+    .WithName("GetPublicCapabilities");
 
 app.MapGet(
     "/api/diagnostics/{diagnosticId}",
@@ -82,6 +95,14 @@ app.MapPost(
             ILoggerFactory loggerFactory,
             CancellationToken cancellationToken) =>
         {
+            if (!publicLeadCaptureEnabled)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status503ServiceUnavailable,
+                    title: "Public lead capture is not enabled",
+                    detail: "Contacta a LCE por correo o teléfono mientras habilitamos el registro seguro.");
+            }
+
             if (!string.IsNullOrWhiteSpace(request.Website))
             {
                 return Results.Accepted(value: new { accepted = true });
