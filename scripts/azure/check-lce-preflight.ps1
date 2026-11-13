@@ -5,7 +5,7 @@
 param(
     [string]$SubscriptionId = "cde3bbad-ead8-41d9-bbed-cbd64987f008",
     [string]$ResourceGroupName = "lce-murus-common-rg",
-    [string]$AppServicePlanName = "lcp-murus-asp",
+    [string]$AppServicePlanName = "lce-murus-asp",
     [string]$WebAppName = "lce-glt"
 )
 
