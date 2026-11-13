@@ -38,7 +38,7 @@ test("Clarity loads only after explicit analytics consent and privacy notice dis
     assert.match(p, /\/assets\/analytics-consent\.css/);
     assert.doesNotMatch(p, /https:\/\/www\.clarity\.ms\/tag\//);
   }
-  assert.match(privacy, /Cookies y Microsoft Clarity/);
+  assert.match(privacy, /Cookies, tecnologías similares y Microsoft Clarity/);
   assert.match(privacy, /_clck/);
   assert.match(privacy, /_clsk/);
 });
