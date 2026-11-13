@@ -35,7 +35,8 @@
 <body>
   <main>
     <h1>Diagnostic Runtime Demo</h1>
-    <p class="demo-note">Harness técnico. No representa el diseño de ninguna landing de producción.</p>
+    <p class="demo-note">Herramienta de prueba técnica. Usa únicamente datos sintéticos. No representa la landing comercial de producción.</p>
+    <p class="demo-note" id="lead-availability" role="status" aria-live="polite">Comprobando disponibilidad de captación…</p>
 
     <div
       id="diagnostic-demo"
@@ -57,10 +58,22 @@
     const formRoot = document.querySelector("#lead-capture");
     const output = document.querySelector("#event-output");
 
-    attachLeadCapture({
-      diagnosticRoot: root,
-      formRoot
-    });
+    // La captura pública queda deshabilitada hasta contar con persistencia durable
+    // y autorización explícita del operador. El diagnóstico técnico sí se puede probar.
+    const captureStatus = document.querySelector("#lead-availability");
+    try {
+      const response = await fetch("/api/public-capabilities", { cache: "no-store" });
+      if (response.ok && (await response.json()).leadCaptureEnabled === true) {
+        attachLeadCapture({ diagnosticRoot: root, formRoot });
+        captureStatus.textContent = "Captación habilitada para este entorno de prueba.";
+      } else {
+        captureStatus.textContent = "Captación de datos de contacto deshabilitada en este entorno.";
+        formRoot.hidden = true;
+      }
+    } catch {
+      captureStatus.textContent = "No se pudo verificar la captación; permanecerá deshabilitada.";
+      formRoot.hidden = true;
+    }
 
     root.addEventListener("diagnostic:completed", event => {
       output.textContent = JSON.stringify(event.detail, null, 2);

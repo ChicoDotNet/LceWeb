@@ -64,6 +64,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export ASPNETCORE_ENVIRONMENT=Development
           export ASPNETCORE_URLS=http://127.0.0.1:5055
           dotnet run --project src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-build > /tmp/lceweb-api.log 2>&1 &
           api_pid=$!
@@ -83,6 +84,8 @@ jobs:
           done
 
           grep -q '"status":"ok"' /tmp/health.json
+          curl --fail --silent http://127.0.0.1:5055/api/public-capabilities > /tmp/capabilities-dev.json
+          grep -q '"leadCaptureEnabled":true' /tmp/capabilities-dev.json
 
           curl --fail --silent \
             http://127.0.0.1:5055/api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425 \
@@ -148,3 +151,29 @@ jobs:
 
           curl --fail --silent http://127.0.0.1:5055/js/leads/lead-capture.js > /tmp/lead-capture.js
           grep -q 'buildLeadSubmissionPayload' /tmp/lead-capture.js
+
+          # Same binary in published mode: in-memory leads must fail closed.
+          ASPNETCORE_URLS=http://127.0.0.1:5056 ASPNETCORE_ENVIRONMENT=Production \
+            dotnet run --project src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-build > /tmp/lceweb-prod.log 2>&1 &
+          prod_pid=$!
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:5056/health > /tmp/health-prod.json; then
+              break
+            fi
+            if ! kill -0 "$prod_pid" 2>/dev/null; then
+              cat /tmp/lceweb-prod.log
+              exit 1
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:5056/api/public-capabilities > /tmp/capabilities-prod.json
+          grep -q '"leadCaptureEnabled":false' /tmp/capabilities-prod.json
+          prod_status=$(curl --silent --output /tmp/denied-prod.json \
+            --write-out '%{http_code}' -H 'Content-Type: application/json' \
+            --data @/tmp/lead.json http://127.0.0.1:5056/api/leads)
+          test "$prod_status" = "503"
+          curl --fail --silent http://127.0.0.1:5056/diagnostico.html > /tmp/diagnostico-prod.html
+          grep -q 'id="lce-diagnostic"' /tmp/diagnostico-prod.html
+          curl --fail --silent http://127.0.0.1:5056/assets/diagnostico.css > /tmp/diagnostico-prod.css
+          curl --fail --silent http://127.0.0.1:5056/assets/diagnostico.js > /tmp/diagnostico-prod.js
+          kill "$prod_pid" 2>/dev/null || true

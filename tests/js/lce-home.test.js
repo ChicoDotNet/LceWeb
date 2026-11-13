@@ -15,6 +15,7 @@ test("homepage has actual branding and valid business contact links", () => {
   assert.match(page, /href="tel:\+525590476846"/);
   assert.doesNotMatch(page, /alert\(|onsubmit=|testimonios ficticios|demo: conectar/i);
   assert.match(page, /<meta name="description"/);
+  assert.ok([...page.matchAll(/href="\/diagnostico\.html"/g)].length >= 3, "falta enlace al diagnóstico en navegación y CTA");
 });
 
 test("all internal anchors resolve to existing sections", () => {

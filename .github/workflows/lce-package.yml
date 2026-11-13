@@ -10,6 +10,7 @@ on:
     branches:
       - features/i01-lce-azure-preflight
       - features/i02-lce-commercial-home
+      - features/i03-commercial-diagnostic
     paths:
       - 'src/**'
       - '.github/workflows/lce-package.yml'
@@ -50,6 +51,9 @@ jobs:
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/site.css"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/site.js"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/favicon.svg"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/diagnostico.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/diagnostico.css"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/diagnostico.js"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/js/diagnostics/diagnostic-runtime.js"
 
       - name: Create deployment ZIP
