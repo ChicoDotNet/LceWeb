@@ -1,15 +1,16 @@
-# I05: Storage preparation for LCE. No runtime or website content changes.
-# Default = preview. Use -Apply for Azure modifications.
+# I05 — LCE Table Storage, minimum privileges. DOES NOT change web app settings.
+# Preview: pwsh ./scripts/azure/prepare-lce-storage.ps1
+# Apply:   pwsh ./scripts/azure/prepare-lce-storage.ps1 -Apply
+# Works in Cloud Shell PowerShell with the repo script uploaded.
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
-    [ValidatePattern('^[a-z0-9]{3,24}$')]
-    [string]$StorageAccountName,
+    [string]$StorageAccountName = "lcemuruscommonst",
     [string]$SubscriptionId = "cde3bbad-ead8-41d9-bbed-cbd64987f008",
     [string]$ResourceGroupName = "lce-murus-common-rg",
     [string]$WebAppName = "lce-glt",
+    [string]$DiagnosticTable = "LceDiagnosticDefinitions",
+    [string]$LeadTable = "LceLeadSubmissions",
     [switch]$Apply,
-    [switch]$CreateStorageIfMissing,
     [string]$OperatorObjectId,
     [ValidateSet("User", "ServicePrincipal", "Group")]
     [string]$OperatorPrincipalType = "User"
@@ -20,156 +21,153 @@ $ErrorActionPreference = "Stop"
 $diagnosticId = "16f5812b-6a27-44f6-b5b4-557a720a6425"
 $roleName = "Storage Table Data Contributor"
 
-function Invoke-AzCli {
-    param([string[]]$CliArgs)
-    & az @CliArgs
+function Invoke-Az {
+    param([string[]]$Arguments)
+    & az @Arguments
     if ($LASTEXITCODE -ne 0) {
-        throw "Azure CLI fallo: az $($CliArgs -join ' ')"
+        throw "Fallo Azure CLI: az $($Arguments -join ' ')"
     }
 }
 
-function Invoke-AzJson {
-    param([string[]]$CliArgs)
-    $output = & az @CliArgs --output json --only-show-errors
+function Get-AzJson {
+    param([string[]]$Arguments)
+    $lines = & az @Arguments --output json --only-show-errors
     if ($LASTEXITCODE -ne 0) {
-        throw "Azure CLI fallo: az $($CliArgs -join ' ')"
+        throw "Fallo Azure CLI: az $($Arguments -join ' ')"
     }
-    return ConvertFrom-Json -InputObject ($output -join [Environment]::NewLine)
+    if (-not $lines) {
+        return $null
+    }
+    return ConvertFrom-Json -InputObject ($lines -join [Environment]::NewLine)
 }
 
-function Ensure-Role {
-    param([string]$PrincipalId, [string]$PrincipalType, [string]$Scope)
-    $existing = & az role assignment list --assignee-object-id $PrincipalId --scope $Scope --role $script:roleName --include-inherited --query "[].id" -o tsv --only-show-errors
-    if ($LASTEXITCODE -ne 0) {
-        throw "No se pudieron consultar los roles del principal $PrincipalId."
-    }
+function Ensure-TableRole {
+    param([string]$Principal, [string]$Type, [string]$Scope)
+    $existing = & az role assignment list --assignee-object-id $Principal --scope $Scope --include-inherited --role $script:roleName --query "[].id" -o tsv --only-show-errors
+    if ($LASTEXITCODE -ne 0) { throw "No se pudieron consultar asignaciones RBAC." }
     if ([string]::IsNullOrWhiteSpace([string]($existing -join ""))) {
-        if ($script:Apply) {
-            Invoke-AzCli -CliArgs @("role", "assignment", "create", "--assignee-object-id", $PrincipalId, "--assignee-principal-type", $PrincipalType, "--role", $script:roleName, "--scope", $Scope, "-o", "none")
-            Write-Host "[OK] RBAC asignado: $PrincipalType"
+        if (-not $script:Apply) {
+            Write-Host "[PENDIENTE] Rol por tabla para $Type"
+            return
         }
-        else {
-            Write-Host "[PENDIENTE] RBAC para $PrincipalType"
-        }
+        Invoke-Az -Arguments @(
+            "role","assignment","create","--assignee-object-id",$Principal,
+            "--assignee-principal-type",$Type,"--role",$script:roleName,
+            "--scope",$Scope,"--output","none"
+        )
+        Write-Host "[OK] RBAC concedido para $Type a tabla $($Scope.Split('/')[-1])"
     }
     else {
-        Write-Host "[OK] RBAC existente: $PrincipalType"
+        Write-Host "[OK] RBAC existente para $Type a tabla $($Scope.Split('/')[-1])"
     }
 }
 
-Invoke-AzCli -CliArgs @("account", "set", "--subscription", $SubscriptionId)
-$group = Invoke-AzJson -CliArgs @("group", "show", "-n", $ResourceGroupName)
-$app = Invoke-AzJson -CliArgs @("webapp", "show", "-g", $ResourceGroupName, "-n", $WebAppName)
+Invoke-Az -Arguments @("account","set","--subscription",$SubscriptionId)
+$app = Get-AzJson -Arguments @("webapp","show","-g",$ResourceGroupName,"-n",$WebAppName)
 if ($app.serverFarmId -notlike "*/lce-murus-asp") {
-    throw "Plan de App Service inesperado: $($app.serverFarmId)"
+    throw "El App Service no está en lce-murus-asp."
 }
-Write-Host "I05: $WebAppName en $($group.location); modo $(if ($Apply) { 'APPLY' } else { 'READ ONLY' })"
+$storage = Get-AzJson -Arguments @("storage","account","show","-g",$ResourceGroupName,"-n",$StorageAccountName)
+if ($storage.kind -ne "StorageV2") { throw "La cuenta existente debe ser StorageV2." }
+if (-not $storage.primaryEndpoints.table) { throw "La cuenta no expone Azure Table Storage." }
+Write-Host "I05 LCE: modo $(if ($Apply) { 'APPLY' } else { 'SOLO LECTURA' })"
+Write-Host "Web App: $WebAppName / Plan: lce-murus-asp"
+Write-Host "Storage compartido: $StorageAccountName / $($storage.primaryEndpoints.table)"
+Write-Host "Tablas exclusivas: $DiagnosticTable; $LeadTable"
 
-$accounts = Invoke-AzJson -CliArgs @("storage", "account", "list", "-g", $ResourceGroupName)
-$storage = @($accounts | Where-Object { $_.name -eq $StorageAccountName }) | Select-Object -First 1
-
-if ($null -eq $storage) {
-    if (-not ($Apply -and $CreateStorageIfMissing)) {
-        Write-Warning "La cuenta '$StorageAccountName' no existe. Para crearla expresamente: -Apply -CreateStorageIfMissing."
-        exit 2
-    }
-    Write-Host "Creando StorageV2 Standard_LRS '$StorageAccountName'. Puede generar cargos Azure."
-    Invoke-AzCli -CliArgs @(
-        "storage", "account", "create", "-g", $ResourceGroupName, "-n", $StorageAccountName,
-        "--location", [string]$group.location, "--sku", "Standard_LRS", "--kind", "StorageV2",
-        "--min-tls-version", "TLS1_2", "--allow-blob-public-access", "false", "-o", "none"
-    )
-}
-
-$storage = Invoke-AzJson -CliArgs @("storage", "account", "show", "-g", $ResourceGroupName, "-n", $StorageAccountName)
-if ($storage.kind -ne "StorageV2") {
-    throw "La cuenta debe ser StorageV2. Tipo recibido: $($storage.kind)"
-}
-$tableEndpoint = [string]$storage.primaryEndpoints.table
-if ([string]::IsNullOrWhiteSpace($tableEndpoint)) {
-    throw "No existe endpoint Table en la cuenta."
-}
-Write-Host "[OK] Storage: $StorageAccountName / $tableEndpoint"
-
-$identity = Invoke-AzJson -CliArgs @("webapp", "identity", "show", "-g", $ResourceGroupName, "-n", $WebAppName)
-$appPrincipal = [string]$identity.principalId
+$appPrincipal = & az webapp identity show -g $ResourceGroupName -n $WebAppName --query principalId -o tsv --only-show-errors
+if ($LASTEXITCODE -ne 0) { throw "No fue posible consultar Managed Identity." }
+$appPrincipal = [string]$appPrincipal
 if ([string]::IsNullOrWhiteSpace($appPrincipal)) {
     if ($Apply) {
-        $identity = Invoke-AzJson -CliArgs @("webapp", "identity", "assign", "-g", $ResourceGroupName, "-n", $WebAppName)
+        $identity = Get-AzJson -Arguments @("webapp","identity","assign","-g",$ResourceGroupName,"-n",$WebAppName)
         $appPrincipal = [string]$identity.principalId
-        if ([string]::IsNullOrWhiteSpace($appPrincipal)) {
-            throw "No se obtuvo principalId al habilitar Managed Identity."
-        }
-        Write-Host "[OK] Managed Identity habilitada."
+        if (-not $appPrincipal) { throw "No se pudo activar Managed Identity." }
+        Write-Host "[OK] Managed Identity habilitada en lce-glt."
     }
     else {
-        Write-Host "[PENDIENTE] Managed Identity del App Service."
+        Write-Host "[PENDIENTE] Managed Identity en lce-glt."
     }
 }
 else {
-    Write-Host "[OK] Managed Identity existente."
+    Write-Host "[OK] Managed Identity disponible."
 }
 
-if ([string]::IsNullOrWhiteSpace($OperatorObjectId)) {
-    $operator = & az ad signed-in-user show --query id -o tsv --only-show-errors
-    if ($LASTEXITCODE -eq 0) {
-        $OperatorObjectId = [string]$operator
+if (-not $OperatorObjectId) {
+    $signedIn = & az ad signed-in-user show --query id -o tsv --only-show-errors
+    if ($LASTEXITCODE -eq 0) { $OperatorObjectId = [string]$signedIn }
+}
+if (-not $OperatorObjectId) {
+    throw "No se pudo identificar al operador. Indica -OperatorObjectId y -OperatorPrincipalType."
+}
+
+foreach ($tableName in @($DiagnosticTable,$LeadTable)) {
+    if ($tableName -cnotmatch "^[A-Za-z][A-Za-z0-9]{2,62}$") {
+        throw "Nombre inválido de tabla: $tableName"
     }
-}
-if ([string]::IsNullOrWhiteSpace($OperatorObjectId)) {
-    throw "No se pudo identificar al operador. Usa -OperatorObjectId y -OperatorPrincipalType."
-}
-Ensure-Role -PrincipalId $OperatorObjectId -PrincipalType $OperatorPrincipalType -Scope ([string]$storage.id)
-if (-not [string]::IsNullOrWhiteSpace($appPrincipal)) {
-    Ensure-Role -PrincipalId $appPrincipal -PrincipalType "ServicePrincipal" -Scope ([string]$storage.id)
+    $scope = "$($storage.id)/tableServices/default/tables/$tableName"
+    & az resource show --ids $scope --api-version 2023-05-01 --output none --only-show-errors 2>$null
+    $exists = ($LASTEXITCODE -eq 0)
+    if (-not $exists) {
+        if ($Apply) {
+            # ARM management plane creates only the table resource, no account keys required.
+            Invoke-Az -Arguments @(
+                "resource","create","--id",$scope,"--api-version","2023-05-01",
+                "--properties","{}","--output","none"
+            )
+            Write-Host "[OK] Tabla creada: $tableName"
+        }
+        else {
+            Write-Host "[PENDIENTE] Tabla por crear: $tableName"
+        }
+    }
+    else {
+        Write-Host "[OK] Tabla existente: $tableName"
+    }
+    Ensure-TableRole -Principal $OperatorObjectId -Type $OperatorPrincipalType -Scope $scope
+    if ($appPrincipal) {
+        Ensure-TableRole -Principal $appPrincipal -Type "ServicePrincipal" -Scope $scope
+    }
 }
 
 if (-not $Apply) {
-    Write-Host "Preflight completado. No se crearon tablas ni se cambió la aplicación."
+    Write-Host "Inspección I05 lista; nada fue modificado."
     exit 0
 }
 
-foreach ($table in @("DiagnosticDefinitions", "LeadSubmissions")) {
-    $created = $false
-    for ($attempt = 1; $attempt -le 6; $attempt++) {
-        & az storage table create --account-name $StorageAccountName --name $table --auth-mode login -o none --only-show-errors
-        if ($LASTEXITCODE -eq 0) {
-            $created = $true
-            break
-        }
-        if ($attempt -lt 6) {
-            Start-Sleep -Seconds 10
-        }
-    }
-    if (-not $created) {
-        throw "No se pudo crear/verificar la tabla '$table'. Revisar RBAC o Storage firewall."
-    }
-    Write-Host "[OK] Tabla: $table"
-}
-
-# Public diagnostic definition contains no prospect data.
+# Seed only a versioned, public questionnaire. No actual customer data is processed.
 $definition = Invoke-RestMethod -Uri "https://$WebAppName.azurewebsites.net/api/diagnostics/$diagnosticId" -TimeoutSec 20
-if ([string]$definition.id -ne $diagnosticId -or [int]$definition.version -lt 1) {
-    throw "El diagnóstico publicado no coincide con el GUID esperado."
+if ([string]$definition.id -ne $diagnosticId -or [int]$definition.version -ne 1) {
+    throw "La definición pública no coincide con la versión 1 de LCE."
 }
-$definitionJson = ConvertTo-Json -InputObject $definition -Depth 100 -Compress
-if ([Text.Encoding]::Unicode.GetByteCount($definitionJson) -gt 61440) {
-    throw "El diagnóstico supera el límite de 60 KiB en Azure Tables."
+$json = ConvertTo-Json -InputObject $definition -Depth 100 -Compress
+if ([Text.Encoding]::Unicode.GetByteCount($json) -gt 61440) {
+    throw "El JSON del diagnóstico excede 60 KiB."
 }
-$rowKey = "v{0:D10}" -f ([int]$definition.version)
-$isActive = if ([bool]$definition.isActive) { "true" } else { "false" }
 $entity = @(
-    "PartitionKey=$diagnosticId", "RowKey=$rowKey",
-    "Version=$([int]$definition.version)", "Version@odata.type=Edm.Int32",
-    "IsActive=$isActive", "IsActive@odata.type=Edm.Boolean",
-    "Name=$([string]$definition.name)", "DefinitionJson=$definitionJson"
+    "PartitionKey=$diagnosticId", "RowKey=v0000000001",
+    "Version=1", "Version@odata.type=Edm.Int32",
+    "IsActive=true", "IsActive@odata.type=Edm.Boolean",
+    "Name=$([string]$definition.name)", "DefinitionJson=$json"
 )
-Invoke-AzCli -CliArgs (@(
-    "storage", "entity", "insert", "--account-name", $StorageAccountName,
-    "--table-name", "DiagnosticDefinitions", "--auth-mode", "login",
-    "--if-exists", "replace", "--entity"
-) + $entity + @("-o", "none"))
-Write-Host "[OK] Definición sembrada: $diagnosticId/$rowKey"
-
-Write-Host "I05: cuentas, roles y tablas preparados. NO se alteraron app settings ni se habilitó captación."
-Write-Host "Table endpoint: $tableEndpoint"
+$seeded = $false
+for ($attempt=1; $attempt -le 8; $attempt++) {
+    # Insert only: if an entity already exists we must not overwrite data.
+    & az storage entity insert --account-name $StorageAccountName --table-name $DiagnosticTable --auth-mode login --if-exists fail --entity @entity --output none --only-show-errors
+    if ($LASTEXITCODE -eq 0) {
+        $seeded = $true
+        Write-Host "[OK] Diagnóstico v1 insertado: $diagnosticId"
+        break
+    }
+    if ($attempt -lt 8) {
+        Write-Host "Reintento $attempt/8; verificando propagación RBAC antes del seed..."
+        Start-Sleep -Seconds 10
+    }
+}
+if (-not $seeded) {
+    Write-Warning "No se completó seed (puede existir v1 o faltar propagación RBAC). Revisar antes de I06."
+    exit 2
+}
+Write-Host "[OK] I05: tablas y roles preparados. La Web NO fue reconfigurada; captura pública sigue desactivada."
+Write-Host "Config I06: Diagnostics__Storage__TableName=$DiagnosticTable"
+Write-Host "Config I06: Leads__Storage__TableName=$LeadTable"
