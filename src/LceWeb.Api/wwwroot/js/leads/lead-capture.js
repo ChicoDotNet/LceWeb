@@ -11,7 +11,7 @@ function collectAcquisition(locationValue = window.location, referrer = document
   };
 }
 
-export function buildLeadSubmissionPayload(diagnosticResult, contact, acquisition) {
+export function buildLeadSubmissionPayload(diagnosticResult, contact, acquisition, privacyNoticeVersion, privacyAccepted = false) {
   const answers = Object.entries(diagnosticResult.answers ?? {}).map(([questionId, answer]) => ({
     questionId,
     answerIds: answer.answerIds ?? [],
@@ -22,6 +22,8 @@ export function buildLeadSubmissionPayload(diagnosticResult, contact, acquisitio
   return {
     diagnosticId: diagnosticResult.diagnosticId,
     definitionVersion: diagnosticResult.definitionVersion,
+    privacyNoticeVersion,
+    privacyAccepted,
     contact: {
       name: contact.name.trim(),
       email: contact.email.trim(),
@@ -41,17 +43,21 @@ export function buildLeadSubmissionPayload(diagnosticResult, contact, acquisitio
 export function attachLeadCapture({
   diagnosticRoot,
   formRoot,
-  endpoint = "/api/leads"
+  endpoint = "/api/leads",
+  privacyNoticeVersion
 }) {
   if (!diagnosticRoot || !formRoot) {
     throw new Error("diagnosticRoot and formRoot are required.");
+  }
+  if (!privacyNoticeVersion || !/^[A-Za-z0-9._-]{1,64}$/.test(privacyNoticeVersion)) {
+    throw new Error("An approved privacy notice revision is required to capture leads.");
   }
 
   let diagnosticResult = null;
 
   formRoot.hidden = true;
   formRoot.innerHTML = `
-    <form class="lce-lead" data-clarity-mask novalidate>
+    <form class="lce-lead clarity-mask" data-clarity-mask novalidate>
       <h2 class="lce-lead__title">Recibe una revisión de tu diagnóstico</h2>
       <p class="lce-lead__intro">Comparte tus datos para que podamos dar seguimiento con el contexto que acabas de responder.</p>
 
@@ -83,7 +89,7 @@ export function attachLeadCapture({
 
       <label class="lce-lead__privacy">
         <input name="privacyAgreement" type="checkbox" required>
-        <span>He leído la <a href="/privacidad.html" target="_blank" rel="noopener noreferrer">información de privacidad</a> y autorizo enviar estos datos a LCE para atender mi solicitud. *</span>
+        <span>He leído el <a href="/privacidad.html" target="_blank" rel="noopener noreferrer">aviso de privacidad vigente</a> y autorizo el tratamiento de los datos que envío para atender mi solicitud. *</span>
       </label>
       <p class="lce-lead__caution">No incluyas contraseñas, e.firma, RFC de terceros ni otros datos confidenciales.</p>
 
@@ -93,6 +99,10 @@ export function attachLeadCapture({
     </form>`;
 
   const form = formRoot.querySelector("form");
+  const revisionText = document.createElement("small");
+  revisionText.className = "lce-lead__revision";
+  revisionText.textContent = `Aviso de privacidad: versión ${privacyNoticeVersion}`;
+  form.querySelector(".lce-lead__privacy").append(revisionText);
   const errorsElement = formRoot.querySelector(".lce-lead__errors");
   const statusElement = formRoot.querySelector(".lce-lead__status");
   const submitButton = formRoot.querySelector(".lce-lead__submit");
@@ -131,7 +141,9 @@ export function attachLeadCapture({
         phoneNumber: String(data.get("phoneNumber") ?? ""),
         website: String(data.get("website") ?? "")
       },
-      collectAcquisition());
+      collectAcquisition(),
+      privacyNoticeVersion,
+      data.get("privacyAgreement") === "on");
 
     submitButton.disabled = true;
     statusElement.textContent = "Enviando…";
