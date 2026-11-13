@@ -41,7 +41,8 @@ var publicLeadCaptureEnabled = app.Environment.IsDevelopment() ||
         leadStorage.Provider,
         LeadStorageOptions.AzureTableProvider,
         StringComparison.OrdinalIgnoreCase) &&
-     builder.Configuration.GetValue<bool>("Leads:PublicCaptureEnabled"));
+     builder.Configuration.GetValue<bool>("Leads:PublicCaptureEnabled") &&
+     builder.Configuration.GetValue<bool>("Leads:PrivacyNoticeApproved"));
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
