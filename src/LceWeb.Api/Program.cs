@@ -171,12 +171,13 @@ app.MapPost(
                     evaluation.Errors.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal));
             }
 
+            var acceptedUtc = timeProvider.GetUtcNow();
             var submission = new LeadSubmission
             {
                 Id = Guid.NewGuid(),
-                CreatedUtc = timeProvider.GetUtcNow(),
+                CreatedUtc = acceptedUtc,
                 PrivacyNoticeVersion = privacyNoticeVersion,
-                PrivacyAcceptedUtc = timeProvider.GetUtcNow(),
+                PrivacyAcceptedUtc = acceptedUtc,
                 DiagnosticId = definition.Id,
                 DefinitionVersion = definition.Version,
                 Contact = evaluation.Contact!,
