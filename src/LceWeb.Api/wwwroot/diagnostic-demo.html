@@ -63,8 +63,9 @@
     const captureStatus = document.querySelector("#lead-availability");
     try {
       const response = await fetch("/api/public-capabilities", { cache: "no-store" });
-      if (response.ok && (await response.json()).leadCaptureEnabled === true) {
-        attachLeadCapture({ diagnosticRoot: root, formRoot });
+      const capabilities = response.ok ? await response.json() : null;
+      if (capabilities?.leadCaptureEnabled === true && capabilities.privacyNoticeVersion) {
+        attachLeadCapture({ diagnosticRoot: root, formRoot, privacyNoticeVersion: capabilities.privacyNoticeVersion });
         captureStatus.textContent = "Captación habilitada para este entorno de prueba.";
       } else {
         captureStatus.textContent = "Captación de datos de contacto deshabilitada en este entorno.";
