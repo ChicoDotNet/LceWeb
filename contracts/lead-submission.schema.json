@@ -4,7 +4,14 @@
   "title": "LCE lead submission",
   "type": "object",
   "additionalProperties": false,
-  "required": ["diagnosticId", "definitionVersion", "contact", "answers"],
+  "required": [
+    "diagnosticId",
+    "definitionVersion",
+    "contact",
+    "answers",
+    "privacyAccepted",
+    "privacyNoticeVersion"
+  ],
   "properties": {
     "diagnosticId": {
       "type": "string",
@@ -17,17 +24,33 @@
     "contact": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "email"],
+      "required": [
+        "name",
+        "email"
+      ],
       "properties": {
-        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
-        "email": { "type": "string", "format": "email", "maxLength": 320 },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 320
+        },
         "phone": {
           "oneOf": [
-            { "type": "null" },
+            {
+              "type": "null"
+            },
             {
               "type": "object",
               "additionalProperties": false,
-              "required": ["callingCode", "number"],
+              "required": [
+                "callingCode",
+                "number"
+              ],
               "properties": {
                 "callingCode": {
                   "type": "string",
@@ -49,36 +72,108 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["questionId"],
+        "required": [
+          "questionId"
+        ],
         "properties": {
-          "questionId": { "type": "string", "minLength": 1 },
+          "questionId": {
+            "type": "string",
+            "minLength": 1
+          },
           "answerIds": {
             "type": "array",
             "uniqueItems": true,
-            "items": { "type": "string", "minLength": 1 }
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           },
           "text": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       }
     },
     "acquisition": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
       "properties": {
-        "utmSource": { "type": ["string", "null"], "maxLength": 256 },
-        "utmMedium": { "type": ["string", "null"], "maxLength": 256 },
-        "utmCampaign": { "type": ["string", "null"], "maxLength": 256 },
-        "utmTerm": { "type": ["string", "null"], "maxLength": 256 },
-        "utmContent": { "type": ["string", "null"], "maxLength": 256 },
-        "referrer": { "type": ["string", "null"], "format": "uri", "maxLength": 2048 },
-        "pageUrl": { "type": ["string", "null"], "format": "uri", "maxLength": 2048 }
+        "utmSource": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "utmMedium": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "utmCampaign": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "utmTerm": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "utmContent": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "referrer": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri",
+          "maxLength": 2048
+        },
+        "pageUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri",
+          "maxLength": 2048
+        }
       }
     },
     "website": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "Honeypot. Legitimate clients leave this empty."
+    },
+    "privacyAccepted": {
+      "type": "boolean",
+      "const": true,
+      "description": "The user expressly accepted the notice for responding to this inquiry; no marketing opt-in is implied."
+    },
+    "privacyNoticeVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Exact approved notice revision supplied by /api/public-capabilities and validated by the API."
     }
   }
 }
