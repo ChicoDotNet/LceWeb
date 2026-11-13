@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - features/i01-lce-azure-preflight
+      - features/i02-lce-commercial-home
     paths:
       - 'src/**'
       - '.github/workflows/lce-package.yml'
@@ -22,6 +23,14 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Verify landing and diagnostic client contracts
+        run: npm run test:diagnostics
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -37,6 +46,10 @@ jobs:
         run: |
           test -f "$RUNNER_TEMP/lce-publish/LceWeb.Api.dll"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/diagnostic-demo.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/index.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/site.css"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/site.js"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/favicon.svg"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/js/diagnostics/diagnostic-runtime.js"
 
       - name: Create deployment ZIP
