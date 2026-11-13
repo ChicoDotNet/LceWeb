@@ -23,14 +23,17 @@ test("diagnostic is read-only and offers real outbound contact after result", ()
   assert.match(page, /id="diagnostic-next-step"[^>]*hidden/);
   assert.match(page, /mailto:asanchez@lce\.com\.mx/);
   assert.match(page, /tel:\+525590476846/);
-  assert.match(page, /no se envían ni se almacenan en LCE/);
+  assert.match(page, /se responde y calcula en tu navegador/);
   assert.match(page, /Evita introducir RFC, e\.firma/);
   assert.doesNotMatch(page, /\/api\/leads|name="email"|name="phoneNumber"/);
-  assert.doesNotMatch(js, /\/api\/leads|fetch\(|localStorage|sessionStorage/);
+  assert.match(js, /\/api\/public-capabilities/);
+  assert.match(js, /leadCaptureEnabled === true/);
+  assert.doesNotMatch(js, /fetch\(["']\/api\/leads/);
 });
 
 test("published capture must be durable and explicitly enabled, not memory", () => {
   assert.match(program, /Leads:PublicCaptureEnabled/);
+  assert.match(program, /Leads:PrivacyNoticeApproved/);
   assert.match(program, /LeadStorageOptions\.AzureTableProvider/);
   assert.match(program, /if \(!publicLeadCaptureEnabled\)/);
   assert.match(program, /Status503ServiceUnavailable/);

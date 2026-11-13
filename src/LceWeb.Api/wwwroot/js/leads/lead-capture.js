@@ -51,7 +51,7 @@ export function attachLeadCapture({
 
   formRoot.hidden = true;
   formRoot.innerHTML = `
-    <form class="lce-lead" novalidate>
+    <form class="lce-lead" data-clarity-mask novalidate>
       <h2 class="lce-lead__title">Recibe una revisión de tu diagnóstico</h2>
       <p class="lce-lead__intro">Comparte tus datos para que podamos dar seguimiento con el contexto que acabas de responder.</p>
 
@@ -80,6 +80,12 @@ export function attachLeadCapture({
         <span>Sitio web</span>
         <input name="website" tabindex="-1" autocomplete="off">
       </label>
+
+      <label class="lce-lead__privacy">
+        <input name="privacyAgreement" type="checkbox" required>
+        <span>He leído la <a href="/privacidad.html" target="_blank" rel="noopener noreferrer">información de privacidad</a> y autorizo enviar estos datos a LCE para atender mi solicitud. *</span>
+      </label>
+      <p class="lce-lead__caution">No incluyas contraseñas, e.firma, RFC de terceros ni otros datos confidenciales.</p>
 
       <div class="lce-lead__errors" role="alert" hidden></div>
       <button class="lce-lead__submit" type="submit">Enviar diagnóstico</button>
