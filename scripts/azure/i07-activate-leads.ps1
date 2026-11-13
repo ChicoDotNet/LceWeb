@@ -62,7 +62,7 @@ foreach ($name in $required.Keys) {
 
 $notice = Invoke-WebRequest "$base/privacidad.html" -TimeoutSec 20
 $noticeBody = [string]$notice.Content
-$legalPlaceholdersPresent = $noticeBody -match "(?i)pendiente antes de activar el formulario|no sustituye el aviso de privacidad integral"
+$legalPlaceholdersPresent = $noticeBody -match "(?i)pendiente antes de activar el formulario|no sustituye el aviso de privacidad integral|PROPUESTA PARA VISTO BUENO|pendiente del visto bueno|no sustituye al aviso oficial"
 
 Write-Host "I07: estado de lce-glt"
 Write-Host "  Health: $($health.status)"
