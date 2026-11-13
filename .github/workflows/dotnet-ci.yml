@@ -64,7 +64,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          set -x
           export ASPNETCORE_ENVIRONMENT=Development
           export ASPNETCORE_URLS=http://127.0.0.1:5055
           dotnet run --project src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-build > /tmp/lceweb-api.log 2>&1 &
@@ -190,7 +189,10 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:5056/api/public-capabilities > /tmp/capabilities-prod.json
           grep -q '"leadCaptureEnabled":false' /tmp/capabilities-prod.json
-          grep -q '"privacyNoticeVersion":null' /tmp/capabilities-prod.json
+          # Null values may be omitted by the configured JSON serializer.
+          if grep -q '"privacyNoticeVersion":' /tmp/capabilities-prod.json; then
+            grep -q '"privacyNoticeVersion":null' /tmp/capabilities-prod.json
+          fi
           prod_status=$(curl --silent --output /tmp/denied-prod.json \
             --write-out '%{http_code}' -H 'Content-Type: application/json' \
             --data @/tmp/lead.json http://127.0.0.1:5056/api/leads)
