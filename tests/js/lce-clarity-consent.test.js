@@ -23,7 +23,7 @@ test("Clarity is installed via pinned official npm package and compiled in deplo
   assert.match(clarity, /zd6brtj9wu/);
 });
 
-test("Clarity stays dormant while official notice says no cookies", () => {
+test("Clarity loads only after explicit analytics consent and privacy notice discloses cookies", () => {
   assert.match(consent, /value === "accepted"/);
   assert.match(consent, /"Permitir analíticas"/);
   assert.match(consent, /"Rechazar"/);
@@ -34,10 +34,13 @@ test("Clarity stays dormant while official notice says no cookies", () => {
   assert.match(clarity, /ad_Storage: "denied"/);
   assert.match(clarity, /analytics_Storage: "granted"/);
   for (const p of [page, diagnostic, privacy]) {
-    assert.doesNotMatch(p, /\/assets\/analytics-consent\.js/);
+    assert.match(p, /\/assets\/analytics-consent\.js/);
+    assert.match(p, /\/assets\/analytics-consent\.css/);
     assert.doesNotMatch(p, /https:\/\/www\.clarity\.ms\/tag\//);
   }
-  assert.match(privacy, /Clarity está temporalmente desactivado/);
+  assert.match(privacy, /Cookies y Microsoft Clarity/);
+  assert.match(privacy, /_clck/);
+  assert.match(privacy, /_clsk/);
 });
 
 test("sensitive questionnaire and contact are masked, contact requires confirmation", () => {
