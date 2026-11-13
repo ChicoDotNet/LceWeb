@@ -56,15 +56,38 @@ Assert-Preflight -Name "Suscripcion accesible" -Condition ($account.id -eq $Subs
 $group = Invoke-AzJson -CliArgs @("group", "show", "--name", $ResourceGroupName)
 Assert-Preflight -Name "Grupo de recursos" -Condition ($group.name -eq $ResourceGroupName) -Detail ([string]$group.location)
 
-$plan = Invoke-AzJson -CliArgs @("appservice", "plan", "show", "--name", $AppServicePlanName, "--resource-group", $ResourceGroupName)
-Assert-Preflight -Name "App Service Plan" -Condition ($plan.name -eq $AppServicePlanName) -Detail ("SKU: " + $plan.sku.name + "; region: " + $plan.location)
-
 $app = Invoke-AzJson -CliArgs @("webapp", "show", "--name", $WebAppName, "--resource-group", $ResourceGroupName)
 Assert-Preflight -Name "Web App" -Condition ($app.name -eq $WebAppName) -Detail ("Estado: " + $app.state)
-Assert-Preflight -Name "Vinculo con ASP" -Condition ($app.serverFarmId -eq $plan.id) -Detail ([string]$app.serverFarmId)
 Assert-Preflight -Name "Host esperado" -Condition ($app.defaultHostName -eq "$WebAppName.azurewebsites.net") -Detail ([string]$app.defaultHostName)
 Assert-Preflight -Name "HTTPS obligatorio" -Condition ([bool]$app.httpsOnly) -Detail ("httpsOnly: " + $app.httpsOnly)
 Assert-Preflight -Name "App iniciada" -Condition ($app.state -eq "Running") -Detail ([string]$app.state)
+
+Write-Host ""
+Write-Host "Plan real vinculado al sitio (independiente del nombre esperado):"
+Write-Host "  Resource ID: $($app.serverFarmId)"
+$actualPlanName = ([string]$app.serverFarmId -split "/")[-1]
+Write-Host "  Nombre real: $actualPlanName"
+
+$plan = $null
+try {
+    $plan = Invoke-AzJson -CliArgs @("appservice", "plan", "show", "--name", $AppServicePlanName, "--resource-group", $ResourceGroupName)
+    Assert-Preflight -Name "ASP esperado existe" -Condition ($plan.name -eq $AppServicePlanName) -Detail ("SKU: " + $plan.sku.name + "; region: " + $plan.location)
+} catch {
+    Assert-Preflight -Name "ASP esperado existe" -Condition $false -Detail ("No se encontro '$AppServicePlanName' en '$ResourceGroupName'.")
+}
+
+$correctBinding = $null -ne $plan -and ([string]$app.serverFarmId -eq [string]$plan.id)
+Assert-Preflight -Name "Vinculo con ASP esperado" -Condition $correctBinding -Detail ("ASP real: $actualPlanName; esperado: $AppServicePlanName")
+
+try {
+    $actualPlan = Invoke-AzJson -CliArgs @("resource", "show", "--ids", [string]$app.serverFarmId)
+    Write-Host "  Region real: $($actualPlan.location)"
+    if ($null -ne $actualPlan.sku) {
+        Write-Host "  SKU real: $($actualPlan.sku.name)"
+    }
+} catch {
+    Write-Warning "No fue posible leer los detalles del plan real: $($_.Exception.Message)"
+}
 
 $config = Invoke-AzJson -CliArgs @("webapp", "config", "show", "--name", $WebAppName, "--resource-group", $ResourceGroupName)
 Write-Host ""
