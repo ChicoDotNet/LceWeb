@@ -22,9 +22,9 @@ El propósito de I05 es dejar la infraestructura lista SIN alterar la persistenc
 
 ## 2. Selección de cuenta
 
-Elegir una cuenta StorageV2 que permita servicio Table. Preferir cuenta dedicada de bajo costo para datos de LCE si no existe una cuenta expresamente compartida/aprobada. El nombre debe ser globalmente único y contener de 3 a 24 caracteres alfanuméricos en minúsculas. La creación de una nueva cuenta Standard_LRS incurre en costos según uso y región.
+**Inventario confirmado:** existe `lcemuruscommonst` (`StorageV2`, `Standard_LRS`, `mexicocentral`). Reutilizarla sin crear nuevas cuentas. Se crearán únicamente las tablas `LceDiagnosticDefinitions` y `LceLeadSubmissions` para evitar colisiones con otras aplicaciones.
 
-Antes de usar una cuenta compartida, comprobar que la autorización de acceso a tablas para lce-glt no conceda acceso involuntario a datos ajenos: el rol Storage Table Data Contributor asignado al scope de la cuenta abarca sus tablas, no sólo las dos tablas de LCE.
+**Seguridad:** asignar `Storage Table Data Contributor` exclusivamente a `LceDiagnosticDefinitions` y `LceLeadSubmissions`, no al nivel de la cuenta. Los permisos por tabla se aplican a Managed Identity y al operador que ejecuta el seed. Entra ID sustituye el uso de claves de cuenta.
 
 ## 3. Script reproducible en repositorio
 
@@ -32,22 +32,20 @@ En una terminal con checkout de features/i05-storage-readiness:
 
 Vista previa de cuenta existente:
 
-    pwsh ./scripts/azure/prepare-lce-storage.ps1 -StorageAccountName CUENTA_EXISTENTE
+    pwsh ./scripts/azure/prepare-lce-storage.ps1
 
 Aplicar para cuenta existente:
 
-    pwsh ./scripts/azure/prepare-lce-storage.ps1 -StorageAccountName CUENTA_EXISTENTE -Apply
+    pwsh ./scripts/azure/prepare-lce-storage.ps1 -Apply
 
-Crear una cuenta nueva de manera explícita y preparar:
-
-    pwsh ./scripts/azure/prepare-lce-storage.ps1 -StorageAccountName NUEVO_NOMBRE -Apply -CreateStorageIfMissing
+No se crearán nuevas cuentas Storage; la opción -CreateStorageIfMissing se retiró para este destino compartido.
 
 El script con -Apply:
 - verifica que lce-glt esté en lce-murus-asp;
-- crea StorageV2 Standard_LRS únicamente con -CreateStorageIfMissing;
+- conserva la cuenta StorageV2 Standard_LRS existente, sin modificar sus propiedades;
 - habilita identidad administrada si aún no existe;
-- otorga Storage Table Data Contributor al operador y al principal de lce-glt, en el scope de la cuenta;
-- crea DiagnosticDefinitions y LeadSubmissions con Azure AD (sin claves);
+- otorga Storage Table Data Contributor sólo al operador y a la identidad de lce-glt en el scope de cada tabla LCE;
+- crea LceDiagnosticDefinitions y LceLeadSubmissions por ARM, sin claves de Storage;
 - copia la definición de diagnóstico v1 pública y la siembra;
 - deja app settings sin modificar: el sitio sigue con la experiencia de I03 y leadCaptureEnabled=false.
 
@@ -57,9 +55,9 @@ Para ejecutar desde Cloud Shell sin clonar el repo privado, el operador puede su
 
 ## 4. Validaciones previas a I06
 
-- Tabla DiagnosticDefinitions existe y tiene entidad PartitionKey 16f5812b-6a27-44f6-b5b4-557a720a6425, RowKey v0000000001.
-- Tabla LeadSubmissions existe (sin leads reales de pruebas).
-- Managed Identity tiene permiso Storage Table Data Contributor sobre la cuenta seleccionada.
+- Tabla LceDiagnosticDefinitions existe y tiene entidad PartitionKey 16f5812b-6a27-44f6-b5b4-557a720a6425, RowKey v0000000001.
+- Tabla LceLeadSubmissions existe (sin leads reales de pruebas).
+- Managed Identity tiene permiso Storage Table Data Contributor sólo sobre las dos tablas LCE.
 - Operador puede consultar la definición con --auth-mode login.
 - /health y /diagnostico.html siguen HTTP 200.
 - /api/public-capabilities sigue leadCaptureEnabled=false.
