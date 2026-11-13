@@ -9,6 +9,7 @@
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
   <link rel="stylesheet" href="/assets/diagnostico.css">
+  <link rel="stylesheet" href="/assets/analytics-consent.css">
   <title>Diagnóstico de comercio exterior | LCE</title>
 </head>
 <body>
@@ -31,7 +32,7 @@
         <div class="diagnostic-benefits" aria-label="Características">
           <span>Orientación inmediata</span>
           <span>Sin registro</span>
-          <span>Sin envío de respuestas</span>
+          <span>Resultados antes de enviar datos</span>
         </div>
       </div>
     </section>
@@ -39,13 +40,14 @@
       <div class="shell diagnostic-layout">
         <div class="diagnostic-panel">
           <h2 id="workspace-heading" class="visually-hidden">Cuestionario de diagnóstico</h2>
-          <div id="lce-diagnostic" data-diagnostic-id="16f5812b-6a27-44f6-b5b4-557a720a6425" data-diagnostic-show-scores="false"></div>
+          <div id="lce-diagnostic" data-clarity-mask data-diagnostic-id="16f5812b-6a27-44f6-b5b4-557a720a6425" data-diagnostic-show-scores="false"></div>
           <div id="diagnostic-next-step" class="diagnostic-next-step" hidden>
             <h3>¿Quieres que revisemos tu situación?</h3>
             <p>Podemos ayudarte a definir los siguientes pasos. Al escribirnos, cuéntanos únicamente lo que decidas compartir.</p>
             <a class="button button-primary" href="mailto:asanchez@lce.com.mx?subject=Consulta%20sobre%20mi%20diagn%C3%B3stico%20LCE">Solicitar orientación <span aria-hidden="true">↗</span></a>
             <a class="secondary-action" href="tel:+525590476846">O llámanos: +52 55 9047 6846</a>
           </div>
+          <div id="lead-capture" data-clarity-mask hidden></div>
         </div>
         <aside class="diagnostic-sidebar" aria-label="Información importante">
           <p class="sidebar-label">SOBRE ESTE DIAGNÓSTICO</p>
@@ -53,7 +55,8 @@
           <p>El resultado depende de tus respuestas. No sustituye una revisión específica de regulaciones, documentación o condiciones de la operación.</p>
           <div class="sidebar-rule"></div>
           <p class="sidebar-label">PRIVACIDAD DEL RECORRIDO</p>
-          <p>Las respuestas de este cuestionario se procesan en tu navegador; no se envían ni se almacenan en LCE desde esta página. Únicamente se consulta al servidor la definición del cuestionario.</p>
+          <p>El diagnóstico se responde y calcula en tu navegador. Únicamente se consulta al servidor la definición del cuestionario. Si LCE habilita el formulario de contacto y decides enviarlo, tus respuestas y datos de contacto se guardarán para dar seguimiento a tu solicitud.</p>
+          <p><a href="/privacidad.html">Consulta la información de privacidad y analíticas</a>.</p>
           <p>Evita introducir RFC, e.firma, números de pedimento, datos personales u otra información confidencial.</p>
           <a href="mailto:asanchez@lce.com.mx?subject=Consulta%20LCE">Prefiero contactar directamente ↗</a>
         </aside>
@@ -67,5 +70,6 @@
     </div>
   </footer>
   <script type="module" src="/assets/diagnostico.js"></script>
+  <script type="module" src="/assets/analytics-consent.js"></script>
 </body>
 </html>
