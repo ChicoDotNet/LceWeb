@@ -23,7 +23,7 @@ test("Clarity is installed via pinned official npm package and compiled in deplo
   assert.match(clarity, /zd6brtj9wu/);
 });
 
-test("consent is required before Clarity bundle is even fetched", () => {
+test("Clarity stays dormant while official notice says no cookies", () => {
   assert.match(consent, /value === "accepted"/);
   assert.match(consent, /"Permitir analíticas"/);
   assert.match(consent, /"Rechazar"/);
@@ -34,10 +34,10 @@ test("consent is required before Clarity bundle is even fetched", () => {
   assert.match(clarity, /ad_Storage: "denied"/);
   assert.match(clarity, /analytics_Storage: "granted"/);
   for (const p of [page, diagnostic, privacy]) {
-    assert.match(p, /\/assets\/analytics-consent\.js/);
-    assert.match(p, /\/assets\/analytics-consent\.css/);
+    assert.doesNotMatch(p, /\/assets\/analytics-consent\.js/);
     assert.doesNotMatch(p, /https:\/\/www\.clarity\.ms\/tag\//);
   }
+  assert.match(privacy, /Clarity está temporalmente desactivado/);
 });
 
 test("sensitive questionnaire and contact are masked, contact requires confirmation", () => {
@@ -45,5 +45,5 @@ test("sensitive questionnaire and contact are masked, contact requires confirmat
   assert.match(lead, /<form class="lce-lead(?: clarity-mask)?" data-clarity-mask/);
   assert.match(lead, /name="privacyAgreement" type="checkbox" required/);
   assert.match(lead, /\/privacidad\.html/);
-  assert.match(privacy, /no sustituye el aviso de privacidad integral/i);
+  assert.match(privacy, /https:\/\/lce\.com\.mx\/index\.php\/privacy-policy-es\//);
 });
