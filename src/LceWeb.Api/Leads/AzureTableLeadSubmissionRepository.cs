@@ -30,6 +30,8 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
             submission.Id.ToString("D"))
         {
             ["CreatedUtc"] = submission.CreatedUtc,
+            ["PrivacyNoticeVersion"] = submission.PrivacyNoticeVersion ?? string.Empty,
+            ["PrivacyAcceptedUtc"] = submission.PrivacyAcceptedUtc ?? submission.CreatedUtc,
             ["DefinitionVersion"] = submission.DefinitionVersion,
             ["Name"] = submission.Contact.Name,
             ["Email"] = submission.Contact.Email,
