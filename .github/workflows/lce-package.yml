@@ -12,6 +12,7 @@ on:
       - features/i02-lce-commercial-home
       - features/i03-commercial-diagnostic
       - features/i06-leads-clarity
+      - features/i07-consent-audit-activation
     paths:
       - 'src/**'
       - '.github/workflows/lce-package.yml'
