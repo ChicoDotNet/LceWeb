@@ -67,6 +67,14 @@ jobs:
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/analytics-consent.js"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/analytics-consent.css"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/privacidad.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/operational-subpages.css"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/assets/control-tower.css"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/servicios/planeacion.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/servicios/logistica.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/servicios/normas-nom.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/l/costos-importacion.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/l/cumplimiento-nom.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/l/diagnostico-logistico.html"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/js/diagnostics/diagnostic-runtime.js"
 
       - name: Create deployment ZIP
