@@ -1,4 +1,5 @@
 import {readFileSync, existsSync} from "node:fs";
+import {runInNewContext} from "node:vm";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {fileURLToPath} from "node:url";
@@ -51,5 +52,38 @@ test("each corporate service page exists and links back to Home",()=>{
  for(const p of ["servicios/planeacion.html","servicios/logistica.html","servicios/normas-nom.html"]){
  assert.ok(existsSync(fileURLToPath(new URL(p,root))));
  const s=read(p);assert.match(s,/href="\/"|href="\/\#servicios"/);assert.match(s,/service-pages.css/);
+ }
+});
+
+test("all twelve landing x CTA variants resolve to the intended actionable URL",()=>{
+ const script=read("assets/landing-experiments.js");
+ for(const [id,path,campaign,headline] of pages){
+   for(const variant of ["call","whatsapp","email","form"]){
+     const links=[{},{}].map(()=>({href:"",textContent:"",dataset:{},addEventListener(){}}));
+     const label={textContent:""};
+     const document={
+       body:{dataset:{campaign,formTarget:id==="C"?"#diagnostico-vivo":"/diagnostico.html?utm_source=landing&utm_campaign="+campaign}},
+       querySelectorAll(selector){
+         if(selector==="[data-cta-primary]")return links;
+         if(selector==="[data-cta-variant]")return [label];
+         throw new Error("Unexpected selector: "+selector);
+       }
+     };
+     runInNewContext(script,{
+       URLSearchParams,
+       document,
+       window:{location:{search:"?contact="+variant}}
+     });
+     const expected=variant==="call"?"tel:+525590476846":
+                    variant==="whatsapp"?"https://wa.me/525590476846":
+                    variant==="email"?"mailto:asanchez@lce.com.mx":
+                    id==="C"?"#diagnostico-vivo":"/diagnostico.html";
+     for(const link of links){
+       assert.ok(link.href.startsWith(expected),id+"/"+variant+" -> "+link.href);
+       assert.equal(link.dataset.contactVariant,variant);
+       assert.equal(link.dataset.experimentVariant,campaign+"-"+({call:"01",whatsapp:"02",email:"03",form:"04"}[variant]));
+     }
+     assert.ok(label.textContent.includes(variant.toUpperCase()));
+   }
  }
 });
