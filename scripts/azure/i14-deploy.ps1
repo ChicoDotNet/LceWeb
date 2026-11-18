@@ -100,12 +100,14 @@ $cap=$null
 for($i=1;$i -le 30;$i++){
   try{
     $cap=Invoke-RestMethod "$base/api/public-capabilities?t=$i" -TimeoutSec 12 -Headers @{"Cache-Control"="no-cache"}
-    if(-not $EnableLeads -or ($cap.leadCaptureEnabled -eq $true -and $cap.privacyNoticeVersion -eq $rev)){break}
+    $capVersion = if($cap.PSObject.Properties.Name -contains "privacyNoticeVersion") { [string]$cap.privacyNoticeVersion } else { "" }
+    if(-not $EnableLeads -or ($cap.leadCaptureEnabled -eq $true -and $capVersion -eq $rev)){break}
   }catch{Write-Host "Esperando API: $i"}
   Start-Sleep -Seconds 5
 }
 if($null -eq $cap){throw "API sin respuesta; la configuracion anterior no fue revertida"}
-Write-Host ("Captacion={0}; Revision={1}" -f $cap.leadCaptureEnabled,$cap.privacyNoticeVersion)
+$capVersion = if($cap.PSObject.Properties.Name -contains "privacyNoticeVersion") { [string]$cap.privacyNoticeVersion } else { "(no publicada)" }
+Write-Host ("Captacion={0}; Revision={1}" -f $cap.leadCaptureEnabled,$capVersion)
 if($EnableLeads -and $cap.leadCaptureEnabled -ne $true){
   Write-Warning "La API no reconoce la activacion. Los App Settings no se revirtieron; inspecciona el entorno y la configuracion antes de recibir clientes."
 }
