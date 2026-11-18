@@ -19,12 +19,12 @@ test("diagnostic route connects to versioned definition via existing runtime", (
   assert.match(styles, /@media\(max-width:850px\)/);
 });
 
-test("diagnostic is read-only and offers real outbound contact after result", () => {
+test("diagnostic offers optional contact with clear, visitor-facing privacy guidance", () => {
   assert.match(page, /id="diagnostic-next-step"[^>]*hidden/);
   assert.match(page, /mailto:asanchez@lce\.com\.mx/);
   assert.match(page, /tel:\+525590476846/);
-  assert.match(page, /se responde y calcula en tu navegador/);
-  assert.match(page, /Evita introducir RFC, e\.firma/);
+  assert.match(page, /Puedes consultar tu resultado sin compartir datos de contacto/);
+  assert.match(page, /Evita incluir contraseñas, e\.firma/);
   assert.doesNotMatch(page, /\/api\/leads|name="email"|name="phoneNumber"/);
   assert.match(js, /\/api\/public-capabilities/);
   assert.match(js, /leadCaptureEnabled === true/);
