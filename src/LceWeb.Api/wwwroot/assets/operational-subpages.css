@@ -1,0 +1,73 @@
+/* I15: shared Executive Control Tower presentation for diagnostic & privacy.
+   Structure and privacy content remain unchanged; identity matches the corporate Home. */
+.lce-subpage{--navy:#0b2746;--navy2:#071c32;--teal:#1269a8;--teal-light:#23a55a;--ink:#14212b;--muted:#617486;--border:#d7e2ea;color:#14212b;background:#f4f8fb}
+.lce-subpage .topbar{background:#ffffffed;border-bottom:1px solid #d7e2ea;backdrop-filter:blur(16px);position:sticky;top:0;z-index:20}
+.lce-subpage .nav-wrap{min-height:78px}.lce-subpage .brand{gap:12px}
+.lce-subpage .tower-logo{width:48px;height:48px;object-fit:contain}
+.lce-subpage .subpage-nav{display:flex;gap:20px;align-items:center;font-size:13px;font-weight:760}
+.lce-subpage .subpage-nav a{color:#0b2746;text-decoration:none;white-space:nowrap}
+.lce-subpage .subpage-nav a:hover{color:#1269a8}
+.lce-subpage .subpage-nav .subpage-nav__action{background:#0b2746;color:#fff;padding:12px 17px;border-radius:6px}
+.lce-subpage .subpage-nav .subpage-nav__action:hover{color:white;background:#1269a8}
+.lce-subpage .status-rail{background:#0b2746;border:none}
+.lce-subpage .status-items{color:#d1e2eb;min-height:37px;font:700 10px Consolas,ui-monospace,monospace;letter-spacing:.13em}
+.lce-subpage .status-items i{background:#23a55a}
+.lce-subpage .footer{background:#071c32}.lce-subpage .footer-grid{color:#c5dae5}
+.lce-subpage .subpage-kicker{font:750 11px Consolas,ui-monospace,monospace!important;letter-spacing:.14em!important;text-transform:uppercase!important;color:#1269a8!important;margin:0 0 18px!important}
+.lce-subpage .diagnostic-hero{position:relative;background:radial-gradient(ellipse at 82% 14%,#deedf7,#f4f8fb 65%);overflow:hidden;padding:72px 0 76px;border-bottom:1px solid #dbe8f0}
+.lce-subpage .diagnostic-hero:before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(#1269a80c 1px,transparent 1px),linear-gradient(90deg,#1269a80c 1px,transparent 1px);background-size:42px 42px}
+.lce-subpage .diagnostic-hero-inner{position:relative;max-width:1000px}
+.lce-subpage .diagnostic-hero h1{color:#0b2746;max-width:900px;font-weight:780;font-size:clamp(38px,4.4vw,64px)}
+.lce-subpage .diagnostic-hero h1 em{font-style:normal;color:#1269a8}
+.lce-subpage .diagnostic-hero .eyebrow{font:750 11px Consolas,ui-monospace,monospace;color:#1269a8}
+.lce-subpage .diagnostic-hero .tiny-line{background:#16864b}
+.lce-subpage .diagnostic-benefits span{border:1px solid #bdd2e2;background:#fff;color:#0b4c77;box-shadow:0 2px 12px #0b27460a}
+.lce-subpage .diagnostic-workspace{background:#f4f8fb;padding:64px 0 95px}
+.lce-subpage .diagnostic-layout{grid-template-columns:minmax(0,1.4fr) minmax(260px,.6fr);gap:22px}
+.lce-subpage .diagnostic-panel{border-radius:13px;box-shadow:0 18px 45px #0b27460d;border:1px solid #d7e2ea;padding:34px;min-height:320px}
+.lce-subpage .diagnostic-panel__heading{padding-bottom:24px;margin-bottom:29px;border-bottom:1px solid #e3ebf0}
+.lce-subpage .diagnostic-panel__heading h2{font-size:clamp(26px,2.5vw,35px);line-height:1.2;letter-spacing:-.04em;color:#0b2746;margin:0 0 9px}
+.lce-subpage .diagnostic-panel__heading>p:last-child{font-size:14px;color:#5f7383;margin:0;line-height:1.65}
+.lce-subpage .lce-diagnostic__title,.lce-subpage .lce-diagnostic__prompt,.lce-subpage .lce-diagnostic__result-label,.lce-subpage .lce-lead__title{color:#0b2746}
+.lce-subpage .lce-diagnostic__progress,.lce-subpage .lce-diagnostic__result-dimension{color:#1269a8;font:750 11px Consolas,ui-monospace,monospace;letter-spacing:.08em}
+.lce-subpage .lce-diagnostic__option{border-radius:8px;border-color:#d4e2ea;background:#f9fcfe}
+.lce-subpage .lce-diagnostic__option:hover{border-color:#78a9ce;background:#f0f7fc}
+.lce-subpage .lce-diagnostic__option:has(input:checked){border-color:#1269a8;background:#ebf5fc}
+.lce-subpage .lce-diagnostic__option input,.lce-subpage .lce-lead__privacy input{accent-color:#1269a8}
+.lce-subpage .lce-diagnostic__button--primary,.lce-subpage .lce-lead__submit{background:#1269a8;color:white;border-color:#1269a8;border-radius:6px}
+.lce-subpage .lce-diagnostic__button--primary:hover,.lce-subpage .lce-lead__submit:hover{background:#0e5a92}
+.lce-subpage .lce-diagnostic__result{background:#ecf5fb;border-left-color:#16864b}
+.lce-subpage .lce-diagnostic__text:focus-visible,.lce-subpage a:focus-visible{outline-color:#16864b}
+.lce-subpage .diagnostic-sidebar{border:1px solid #d3e1ea;background:#eaf2f7;border-radius:12px;padding:28px}
+.lce-subpage .diagnostic-sidebar h3{color:#0b2746;font-size:24px;line-height:1.2;letter-spacing:-.035em}
+.lce-subpage .diagnostic-sidebar p:not(.sidebar-label){color:#526d80;font-size:14px;line-height:1.7}
+.lce-subpage .diagnostic-sidebar a{color:#1269a8}
+.lce-subpage .diagnostic-sidebar__caution{background:#ffffffb8;border-left:3px solid #16864b;padding:10px 14px}
+.lce-subpage .diagnostic-sidebar__contact{display:inline-block;margin-top:16px}
+.lce-subpage .diagnostic-next-step{border-top:1px solid #d7e2ea;margin-top:25px;padding-top:24px}
+.lce-subpage .diagnostic-next-step h3{color:#0b2746}
+.lce-subpage .lce-lead{padding-top:22px}
+.lce-subpage .lce-lead__privacy a{color:#1269a8}
+.lce-privacy-page .privacy-hero{background:radial-gradient(ellipse at 80% 0%,#dcebf6,#f4f8fb 62%);padding:63px 0 43px;border-bottom:1px solid #d7e2ea}
+.lce-privacy-page .privacy-hero .shell{max-width:1010px}
+.lce-privacy-page .privacy-hero .eyebrow{font:750 11px Consolas,ui-monospace,monospace;color:#1269a8;letter-spacing:.13em}
+.lce-privacy-page .privacy-hero h1{font-size:clamp(34px,4vw,54px);letter-spacing:-.05em;line-height:1.1;color:#0b2746;max-width:850px;margin:0 0 20px}
+.lce-privacy-page .privacy-hero p:not(.eyebrow){color:#506c80;font-size:16px;max-width:850px;line-height:1.7}
+.lce-privacy-page .privacy-layout{width:min(calc(100% - 40px),1010px);max-width:none;margin:0 auto;padding:45px 0 95px;line-height:1.8;color:#223b4b;display:grid;grid-template-columns:minmax(0,1fr) 235px;gap:34px}
+.lce-privacy-page .privacy-content{background:#fff;border:1px solid #d7e2ea;border-radius:12px;padding:28px 38px;box-shadow:0 15px 45px #0b27460c;min-width:0}
+.lce-privacy-page .privacy-content h2{font-size:clamp(20px,2vw,27px);color:#0b2746;line-height:1.26;letter-spacing:-.025em;margin:35px 0 13px;padding-top:26px;border-top:1px solid #e2ebef}
+.lce-privacy-page .privacy-content h2:first-child{margin-top:0;padding-top:0;border-top:0}
+.lce-privacy-page .privacy-content p{margin:0 0 16px;color:#395366;line-height:1.8}
+.lce-privacy-page .privacy-content ul{padding-left:24px;margin:0 0 20px}
+.lce-privacy-page .privacy-content li{margin-bottom:8px;color:#395366}
+.lce-privacy-page .privacy-content a{color:#1269a8;text-underline-offset:3px}
+.lce-privacy-page .privacy-content code{background:#edf3f8;border-radius:3px;padding:2px 5px;font-size:.88em}
+.lce-privacy-page .privacy-metadata{font-size:12px!important;color:#60798a!important}
+.lce-privacy-page .privacy-aside{align-self:start;position:sticky;top:110px;background:#0b2746;color:#f0f8fe;border-radius:12px;padding:25px}
+.lce-privacy-page .privacy-aside h2{font-size:18px;line-height:1.25;margin:0 0 12px;color:white}
+.lce-privacy-page .privacy-aside p{font-size:13px;line-height:1.6;color:#c3d5e3}
+.lce-privacy-page .privacy-aside a{display:block;color:#8fe1bc;font-size:13px;margin:14px 0;text-underline-offset:3px}
+.lce-privacy-page .privacy-aside small{display:block;color:#bdd0df;margin-top:15px;font-size:11px;line-height:1.6}
+@media(max-width:880px){.lce-subpage .diagnostic-layout{grid-template-columns:1fr}.lce-privacy-page .privacy-layout{grid-template-columns:1fr}.lce-privacy-page .privacy-aside{position:static;grid-row:1}.lce-subpage .subpage-nav{gap:12px}}
+@media(max-width:650px){.lce-subpage .topbar{position:relative}.lce-subpage .nav-wrap{min-height:72px}.lce-subpage .subpage-nav a:nth-child(2),.lce-subpage .subpage-nav a:nth-child(3){display:none}.lce-subpage .subpage-nav .subpage-nav__action{padding:10px;font-size:12px}.lce-subpage .diagnostic-hero{padding:56px 0}.lce-subpage .diagnostic-workspace{padding:36px 0 75px}.lce-subpage .diagnostic-panel{padding:20px}.lce-privacy-page .privacy-hero{padding:44px 0 30px}.lce-privacy-page .privacy-content{padding:25px 20px}.lce-privacy-page .privacy-aside{padding:20px}.lce-subpage .status-items span:nth-child(4){display:none}}
+@media(prefers-reduced-motion:reduce){.lce-subpage *,.lce-subpage *::before,.lce-subpage *::after{transition:none!important;animation:none!important}}
