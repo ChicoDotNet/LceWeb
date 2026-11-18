@@ -4,6 +4,7 @@
   const params = new URLSearchParams(window.location.search);
   const requested = (params.get("contact") || "form").toLowerCase();
   const contact = allowed.has(requested) ? requested : "form";
+  const variants = {call:"01",whatsapp:"02",email:"03",form:"04"};
   const campaign = document.body.dataset.campaign || "lce";
   const call = "tel:+525590476846";
   const msg = "Hola, quiero revisar una operación de comercio exterior con LCE. Campaña: " + campaign;
@@ -17,6 +18,7 @@
     link.href=destinations[contact].url;
     link.textContent=destinations[contact].label+" ↗";
     link.dataset.contactVariant=contact;
+    link.dataset.experimentVariant=(campaign+"-"+variants[contact]);
     if(contact==="whatsapp"){link.target="_blank";link.rel="noopener noreferrer";}
   });
   document.querySelectorAll("[data-cta-variant]").forEach(e => {e.textContent="CTA / "+contact.toUpperCase();});
