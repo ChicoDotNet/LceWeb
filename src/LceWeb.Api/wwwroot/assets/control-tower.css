@@ -1,0 +1,32 @@
+/* Executive Control Tower — adapted from user-provided lce-web.zip visual system */
+:root{--navy:#0b2746;--navy2:#071c32;--teal:#1269a8;--teal-light:#23a55a;--ink:#14212b;--muted:#667684;--border:#d7e2ea}
+.control-tower-home{font-family:"Segoe UI Variable","Segoe UI",system-ui,sans-serif;background:#f4f8fb}
+.control-tower-home .topbar{position:sticky;top:0;background:#fffffff2;backdrop-filter:blur(15px);border-bottom:1px solid #d7e2ea}
+.tower-logo{height:48px;width:48px;object-fit:contain;display:block;filter:drop-shadow(0 1px 2px #0b274621)}
+.control-tower-home .status-rail{background:#0b2746;border:0}.control-tower-home .status-items{color:#c1d8e6;min-height:38px}.control-tower-home .status-items i{background:#23a55a}
+.control-tower-home .hero{background:radial-gradient(ellipse at 80% 40%,#dcecf7 0%,#f4f8fb 62%,#eff6fb 100%)}
+.control-tower-home .hero-grid{min-height:645px}
+.control-tower-home .hero h1{color:#0b2746;font-weight:780}
+.control-tower-home .hero h1 em{color:#1269a8}
+.control-tower-home .eyebrow{font-family:Consolas,monospace;letter-spacing:.14em;color:#1269a8;font-weight:750}
+.control-tower-home .button-primary{background:#1269a8}.control-tower-home .button-primary:hover{background:#0e5a92}
+.control-tower-home .button-secondary{border-color:#bdd2e3;color:#0b2746}
+.control-tower-home .control-panel{background:#071c32;border:1px solid #193e60;box-shadow:0 25px 70px #071c3230;border-radius:16px;min-height:464px}
+.control-tower-home .control-panel:before{background:radial-gradient(circle at 50% 44%,#1269a844,transparent 53%)}
+.control-tower-home .panel-grid{opacity:.17}.control-tower-home .panel-top{font-family:Consolas,monospace;color:#c1d6e4}
+.control-tower-home .orbit-core{background:linear-gradient(140deg,#1269a8,#16864b);border:1px solid #ffffff4d}
+.control-tower-home .orbit-ring{border-color:#3783b66e}.control-tower-home .orbit-point{background:#23a55a;box-shadow:0 0 0 1px #23a55a}
+.control-tower-home .panel-bottom{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.control-tower-home .panel-bottom div{border-right:1px solid #ffffff20;padding-right:4px}.control-tower-home .panel-bottom small{font-size:9px;color:#69dda4}.control-tower-home .panel-bottom strong{font-size:11px;color:#e1edf5}
+.tower-label{position:absolute;font:700 9px Consolas,monospace;letter-spacing:.07em;background:#092e4c;border:1px solid #2c759e;color:#b9dbec;padding:7px 9px;border-radius:5px;z-index:2}
+.tower-label-a{left:3%;top:19%}.tower-label-b{right:0;top:33%}.tower-label-c{left:11%;bottom:18%}
+.control-tower-home .intro-band{background:#1269a8}
+.control-tower-home .service-card{border-top:3px solid #23a55a}
+.control-tower-home .service-number{font-family:Consolas,monospace;color:#1269a8}
+.commitments-section{background:#0b2746;color:#e7eff6}.commitments-section h2{color:#fff}.commitments-section .section-header>p{color:#bdd0df}.commitments-section .eyebrow{color:#64dba7}
+.commitment-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.commitment-item{padding:22px;border:1px solid #ffffff2b;background:#ffffff0a;border-radius:8px}.commitment-item small{font:700 10px Consolas,monospace;color:#76dda9}.commitment-item p{font-size:15px;line-height:1.65;margin:16px 0 0;color:#dbe6ed}
+.expertise-section{background:#eaf2f7}.expertise-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}.expertise-grid h2{color:#0b2746}.expertise-list{display:grid;gap:10px}.expertise-list>div{display:flex;align-items:center;gap:20px;padding:20px;background:#fff;border:1px solid #d4e2ec;border-radius:8px}.expertise-list span{color:#16864b;font:700 12px Consolas,monospace}.expertise-list strong{font-size:15px;color:#0b2746}
+.control-tower-home .evidence-section{background:#f4f8fb}
+@media(max-width:960px){.commitment-grid{grid-template-columns:repeat(2,1fr)}.control-tower-home .panel-bottom{grid-template-columns:repeat(2,1fr)}.expertise-grid{gap:30px}}
+@media(max-width:680px){.commitment-grid,.expertise-grid{grid-template-columns:1fr}.control-tower-home .topbar{position:relative}.tower-label{font-size:8px}.control-tower-home .panel-bottom{grid-template-columns:repeat(2,1fr)}}
+@media(prefers-reduced-motion:reduce){.control-tower-home *, .control-tower-home *::before,.control-tower-home *::after{animation:none!important;transition:none!important}}
