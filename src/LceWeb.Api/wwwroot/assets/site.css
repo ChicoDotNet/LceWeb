@@ -14,3 +14,15 @@
 @media(max-width:580px){.shell{width:min(var(--shell),calc(100% - 34px))}.nav-wrap{min-height:75px}.brand-mark{font-size:33px}.brand-copy{font-size:8px}.status-items{flex-wrap:wrap;gap:8px 15px;padding:11px 0}.status-items span{font-size:8px}.hero-grid{padding-top:60px;padding-bottom:64px}.hero h1{font-size:41px}.hero-lede{font-size:15px}.hero-actions{flex-direction:column}.hero-actions .button{width:100%}.control-panel{min-height:385px;padding:20px}.panel-orbit{height:245px}.ring-two{width:218px;height:218px}.panel-bottom{font-size:10px}.panel-bottom strong{font-size:10px}.intro-content{padding:25px 0}.intro-content strong{font-size:18px}.intro-content p{font-size:13px}.section{padding:68px 0}.services-grid{grid-template-columns:1fr}.service-card{min-height:300px}.method-steps li{gap:18px}.contact-section{padding:70px 0}.contact-card{padding:26px}.footer-grid{grid-template-columns:1fr;gap:20px}.footer small{grid-column:auto}}
 @media(prefers-reduced-motion:reduce){:root{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
 .intro-link{display:inline-block;color:#fff;font-weight:800;text-decoration:underline;text-underline-offset:3px;margin-left:3px}.intro-link:hover{color:#dcfffb}
+
+/* I09 — recovered and attributed customer proof */
+.evidence-section{background:linear-gradient(180deg,#f3f8fa,#fff)}
+.evidence-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.evidence-card{margin:0;background:#fff;border:1px solid #d7e3e9;border-radius:16px;padding:24px;box-shadow:0 15px 40px rgba(15,48,70,.055);display:flex;flex-direction:column;gap:18px}
+.evidence-card img{height:84px;width:100%;object-fit:contain;object-position:left center;max-width:190px}
+.evidence-card blockquote{font-size:17px;line-height:1.6;color:#1d3a4e;margin:0;flex:1}
+.evidence-card figcaption{padding-top:12px;border-top:1px solid #e2e9ed;font-size:13px;color:#637686}
+.evidence-card figcaption strong{color:#14364d}
+.evidence-source{color:#687b89;font-size:12px;margin:20px 0 0}
+.evidence-source a{color:#007f86}
+@media(max-width:780px){.evidence-grid{grid-template-columns:1fr}.evidence-card{padding:20px}.evidence-card img{height:68px}}
