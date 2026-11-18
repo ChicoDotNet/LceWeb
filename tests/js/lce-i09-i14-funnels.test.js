@@ -83,7 +83,7 @@ test("all twelve landing x CTA variants resolve to the intended actionable URL",
        assert.equal(link.dataset.contactVariant,variant);
        assert.equal(link.dataset.experimentVariant,campaign+"-"+({call:"01",whatsapp:"02",email:"03",form:"04"}[variant]));
      }
-     assert.ok(label.textContent.includes(variant.toUpperCase()));
+     assert.equal(label.textContent,({call:"Atención telefónica",whatsapp:"Atención por WhatsApp",email:"Escríbenos por correo",form:"Solicitar orientación"}[variant]));
    }
  }
 });
