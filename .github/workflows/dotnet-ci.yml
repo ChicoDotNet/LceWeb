@@ -174,6 +174,31 @@ jobs:
           curl --fail --silent http://127.0.0.1:5055/js/leads/lead-capture.js > /tmp/lead-capture.js
           grep -q 'buildLeadSubmissionPayload' /tmp/lead-capture.js
 
+          # Commercial version: no internal weights or bands in the public definition or receipt.
+          curl --fail --silent http://127.0.0.1:5055/api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425 > /tmp/commercial.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/commercial.json'))
+          assert d['version']==2 and len(d['steps'])==5 and not d.get('results') and not d.get('dimensions')
+          assert all(not o.get('scores') for s in d['steps'] for q in s['questions'] for o in q.get('options',[]))
+          lead=json.load(open('/tmp/lead.json'))
+          lead['definitionVersion']=2
+          lead['answers']=[{'questionId':k,'answerIds':v} for k,v in {'business':['company-foreign'],'stage':['blocked'],'ticket':['over-100k'],'volume':['over-12'],'owner':['both'],'products':['machinery'],'technical':['available'],'registry':['yes'],'priorities':['trust','cost']}.items()]
+          json.dump(lead,open('/tmp/commercial-lead.json','w'))
+          lead['contact']['phone']=None
+          json.dump(lead,open('/tmp/commercial-no-phone.json','w'))
+          PY
+          status=$(curl --silent --output /tmp/commercial-error.json --write-out '%{http_code}' -H 'Content-Type: application/json' --data @/tmp/commercial-no-phone.json http://127.0.0.1:5055/api/leads)
+          test "$status" = "400"
+          grep -q 'contact.phone' /tmp/commercial-error.json
+          status=$(curl --silent --output /tmp/commercial-response.json --write-out '%{http_code}' -H 'Content-Type: application/json' --data @/tmp/commercial-lead.json http://127.0.0.1:5055/api/leads)
+          test "$status" = "201"
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/commercial-response.json'))
+          assert d['definitionVersion']==2 and d['submissionId'] and not d.get('scores') and not d.get('results')
+          PY
+
           # Same binary in published mode: in-memory leads must fail closed.
           ASPNETCORE_URLS=http://127.0.0.1:5056 ASPNETCORE_ENVIRONMENT=Production \
             dotnet run --project src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-build > /tmp/lceweb-prod.log 2>&1 &
