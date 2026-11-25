@@ -83,7 +83,7 @@ class DiagnosticRuntime {
     const next = createElement(
       "button",
       "lce-diagnostic__button lce-diagnostic__button--primary",
-      this.stepIndex === visibleSteps.length - 1 ? "Ver resultado" : "Continuar"
+      this.stepIndex === visibleSteps.length - 1 ? (this.definition.version >= 2 ? "Solicitar seguimiento" : "Ver resultado") : "Continuar"
     );
     next.type = "submit";
     actions.append(next);
@@ -227,7 +227,9 @@ export async function mountDiagnostic(root, options = {}) {
   root.replaceChildren(createElement("p", "lce-diagnostic__status", "Cargando diagnóstico…"));
 
   try {
-    const response = await fetch(buildApiUrl(baseUrl, diagnosticId), { headers: { Accept: "application/json" } });
+    const version = options.version ?? root.dataset.diagnosticVersion;
+    const url = buildApiUrl(baseUrl, diagnosticId) + (version ? `?version=${encodeURIComponent(version)}` : "");
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error(`No se pudo cargar el diagnóstico (${response.status}).`);
 
     const definition = await response.json();

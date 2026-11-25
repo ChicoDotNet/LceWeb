@@ -12,7 +12,9 @@ public static class LeadEmailFormatter
         LeadSubmission submission,
         LeadEmailOptions options)
     {
-        var subject = $"{options.SubjectPrefix}: {definition.Name} — {submission.Contact.Name}";
+        var subject = submission.Scores.TryGetValue("commercial", out var score)
+            ? $"{options.SubjectPrefix}: {score}/17 — {definition.Name} — {submission.Contact.Name}"
+            : $"{options.SubjectPrefix}: {definition.Name} — {submission.Contact.Name}";
         var plainText = BuildPlainText(definition, submission);
         var html = BuildHtml(definition, submission);
 
@@ -46,6 +48,7 @@ public static class LeadEmailFormatter
         AppendAnswersPlain(builder, definition, submission.Answers);
 
         builder.AppendLine();
+        builder.AppendLine($"Intereses: {string.Join(", ", submission.InterestTags)}");
         builder.AppendLine("RESULTADOS");
         AppendResultsPlain(builder, definition, submission);
 
@@ -74,6 +77,7 @@ public static class LeadEmailFormatter
         builder.Append("<h2 style=\"font-size:20px\">Autodiagnóstico</h2>");
         AppendAnswersHtml(builder, definition, submission.Answers);
 
+        builder.Append($"<p><strong>Intereses:</strong> {Encode(string.Join(", ", submission.InterestTags))}</p>");
         builder.Append("<h2 style=\"font-size:20px\">Resultados</h2>");
         AppendResultsHtml(builder, definition, submission);
 

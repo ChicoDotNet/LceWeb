@@ -45,6 +45,8 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
             ["EmailStatusUpdatedUtc"] = submission.CreatedUtc,
             ["EmailOperationId"] = string.Empty,
             ["EmailError"] = string.Empty,
+            ["CommercialScore"] = submission.Scores.TryGetValue("commercial", out var commercialScore) ? commercialScore : null,
+            ["InterestTags"] = string.Join(",", submission.InterestTags),
             ["SubmissionJson"] = submissionJson
         };
 

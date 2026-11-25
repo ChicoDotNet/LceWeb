@@ -109,6 +109,11 @@ export function attachLeadCapture({
 
   diagnosticRoot.addEventListener("diagnostic:completed", event => {
     diagnosticResult = event.detail;
+    const commercial = diagnosticResult.definitionVersion >= 2;
+    form.elements.phoneNumber.required = commercial;
+    form.elements.callingCode.required = commercial;
+    form.elements.phoneNumber.closest("label").querySelector("span").textContent = commercial ? "Teléfono *" : "Teléfono (opcional)";
+    if (commercial) submitButton.textContent = "Solicitar una llamada";
     formRoot.hidden = false;
     formRoot.dispatchEvent(new CustomEvent("lead:ready", {
       bubbles: true,
@@ -173,7 +178,10 @@ export function attachLeadCapture({
         throw new Error(body.detail ?? body.title ?? `Lead submission failed with HTTP ${response.status}.`);
       }
 
-      statusElement.textContent = "Gracias. Tu diagnóstico fue enviado correctamente.";
+      statusElement.textContent = diagnosticResult.definitionVersion >= 2
+        ? "Gracias por compartirnos tu operación. Próximamente recibirás una llamada de uno de nuestros asesores."
+        : "Gracias. Tu diagnóstico fue enviado correctamente.";
+      for (const field of form.querySelectorAll("input")) field.disabled = true;
       formRoot.dispatchEvent(new CustomEvent("lead:submitted", {
         bubbles: true,
         detail: body

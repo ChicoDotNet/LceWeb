@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - 'features/i16-i25-commercial-integration'
 
 permissions:
   contents: read
@@ -89,7 +90,7 @@ jobs:
           grep -q '"privacyNoticeVersion":"development-test"' /tmp/capabilities-dev.json
 
           curl --fail --silent \
-            http://127.0.0.1:5055/api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425 \
+            http://127.0.0.1:5055/api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425?version=1 \
             > /tmp/diagnostic.json
 
           grep -q '"id":"16f5812b-6a27-44f6-b5b4-557a720a6425"' /tmp/diagnostic.json

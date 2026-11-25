@@ -63,7 +63,7 @@ app.MapGet("/api/public-capabilities", () => Results.Ok(new
 
 app.MapGet(
     "/api/diagnostics/{diagnosticId}",
-    async (string diagnosticId, IDiagnosticDefinitionRepository repository, CancellationToken cancellationToken) =>
+    async (string diagnosticId, int? version, IDiagnosticDefinitionRepository repository, CancellationToken cancellationToken) =>
     {
         if (!Guid.TryParse(diagnosticId, out var id) || id == Guid.Empty)
         {
@@ -73,7 +73,9 @@ app.MapGet(
                 detail: "diagnosticId must be a non-empty GUID.");
         }
 
-        var definition = await repository.GetLatestAsync(id, cancellationToken);
+        var definition = version.HasValue
+            ? await repository.GetVersionAsync(id, version.Value, cancellationToken)
+            : await repository.GetLatestAsync(id, cancellationToken);
         if (definition is null)
         {
             return Results.Problem(
@@ -88,7 +90,8 @@ app.MapGet(
                 title: "Diagnostic is inactive");
         }
 
-        return Results.Ok(definition);
+        // The public commercial questionnaire must not expose internal weighting or bands.
+        return Results.Ok(definition.Version >= 2 ? CommercialDiagnostic.PublicDefinition(definition) : definition);
     })
     .WithName("GetDiagnosticDefinition");
 
@@ -184,7 +187,8 @@ app.MapPost(
                 Answers = evaluation.Answers,
                 Acquisition = evaluation.Acquisition,
                 Scores = evaluation.Scores,
-                Results = evaluation.Results
+                Results = evaluation.Results,
+                InterestTags = CommercialDiagnostic.InterestTags(evaluation.Answers, evaluation.Acquisition)
             };
 
             await leadRepository.StoreAsync(submission, cancellationToken);
@@ -252,8 +256,8 @@ app.MapPost(
                     CreatedUtc = submission.CreatedUtc,
                     DiagnosticId = submission.DiagnosticId,
                     DefinitionVersion = submission.DefinitionVersion,
-                    Scores = submission.Scores,
-                    Results = submission.Results
+                    Scores = definition.Version >= 2 ? new Dictionary<string, int>() : submission.Scores,
+                    Results = definition.Version >= 2 ? [] : submission.Results
                 },
                 statusCode: StatusCodes.Status201Created);
         })

@@ -5,7 +5,7 @@ const formRoot = document.querySelector("#lead-capture");
 // The questionnaire works whether or not lead collection is enabled.
 if (root && nextStep) {
   root.addEventListener("diagnostic:completed", () => {
-    nextStep.hidden = false;
+    nextStep.hidden = leadCaptureEnabled;
   });
   root.addEventListener("diagnostic:error", () => {
     nextStep.hidden = true;

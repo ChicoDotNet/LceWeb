@@ -17,6 +17,8 @@ public static partial class LeadSubmissionEvaluator
     {
         var errors = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var contact = NormalizeContact(request.Contact, errors);
+        if (definition.Version >= 2 && request.Contact.Phone is null)
+            AddError(errors, "contact.phone", "El teléfono es obligatorio para solicitar una llamada.");
         var acquisition = NormalizeAcquisition(request.Acquisition, errors);
 
         var allQuestions = definition.Steps

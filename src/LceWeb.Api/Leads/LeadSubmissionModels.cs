@@ -88,6 +88,7 @@ public sealed record LeadResult
 
 public sealed record LeadSubmission
 {
+    public IReadOnlyList<string> InterestTags { get; init; } = [];
     public Guid Id { get; init; }
     public DateTimeOffset CreatedUtc { get; init; }
     public string? PrivacyNoticeVersion { get; init; }

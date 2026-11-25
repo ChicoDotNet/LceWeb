@@ -1,0 +1,507 @@
+{
+  "id": "16f5812b-6a27-44f6-b5b4-557a720a6425",
+  "version": 2,
+  "isActive": true,
+  "name": "Diagnóstico comercial LCE",
+  "copy": {
+    "introTitle": "Conozcamos tu operación de comercio exterior",
+    "introBody": "Responde cinco pasos para preparar una conversación con nuestro equipo.",
+    "completionTitle": "Ya conocemos mejor tu operación",
+    "completionBody": "Comparte tus datos para solicitar una llamada de uno de nuestros asesores."
+  },
+  "dimensions": [
+    {
+      "id": "commercial",
+      "label": "Potencial comercial"
+    }
+  ],
+  "steps": [
+    {
+      "id": "profile",
+      "order": 10,
+      "title": "Perfil del negocio",
+      "questions": [
+        {
+          "id": "business",
+          "order": 10,
+          "prompt": "¿Qué tipo de negocio tienes?",
+          "type": "singleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "individual-mx",
+              "order": 10,
+              "label": "Persona física nacional",
+              "scores": {
+                "commercial": 1
+              }
+            },
+            {
+              "id": "individual-foreign",
+              "order": 20,
+              "label": "Persona física extranjera",
+              "scores": {
+                "commercial": 2
+              }
+            },
+            {
+              "id": "company-mx",
+              "order": 30,
+              "label": "Empresa nacional",
+              "scores": {
+                "commercial": 2
+              }
+            },
+            {
+              "id": "company-foreign",
+              "order": 40,
+              "label": "Empresa extranjera",
+              "scores": {
+                "commercial": 3
+              }
+            },
+            {
+              "id": "investment",
+              "order": 50,
+              "label": "Proyecto de inversión en comercio exterior",
+              "scores": {
+                "commercial": 2
+              }
+            }
+          ]
+        },
+        {
+          "id": "stage",
+          "order": 20,
+          "prompt": "¿En qué etapa está tu operación?",
+          "type": "singleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "exploring",
+              "order": 10,
+              "label": "Apenas estoy explorando",
+              "scores": {
+                "commercial": 1
+              }
+            },
+            {
+              "id": "planning",
+              "order": 20,
+              "label": "Ya estoy planeando",
+              "scores": {
+                "commercial": 2
+              }
+            },
+            {
+              "id": "in-progress",
+              "order": 30,
+              "label": "Ya está en marcha",
+              "scores": {
+                "commercial": 3
+              }
+            },
+            {
+              "id": "blocked",
+              "order": 40,
+              "label": "Está detenida o bloqueada",
+              "scores": {
+                "commercial": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "commercial",
+      "order": 20,
+      "title": "Dimensión comercial",
+      "questions": [
+        {
+          "id": "ticket",
+          "order": 10,
+          "prompt": "¿Cuál es el valor promedio de tus operaciones de comercio exterior?",
+          "type": "singleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "up-to-10k",
+              "order": 10,
+              "label": "Hasta 10,000 USD",
+              "scores": {
+                "commercial": 1
+              }
+            },
+            {
+              "id": "10k-100k",
+              "order": 20,
+              "label": "Más de 10,000 y hasta 100,000 USD",
+              "scores": {
+                "commercial": 2
+              }
+            },
+            {
+              "id": "over-100k",
+              "order": 30,
+              "label": "Más de 100,000 USD",
+              "scores": {
+                "commercial": 3
+              }
+            },
+            {
+              "id": "unknown",
+              "order": 40,
+              "label": "Todavía no lo tengo claro",
+              "scores": {
+                "commercial": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "volume",
+          "order": 20,
+          "prompt": "¿Cuántos embarques realizas o estimas realizar al año?",
+          "type": "singleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "1-5",
+              "order": 10,
+              "label": "De 1 a 5 embarques",
+              "scores": {
+                "commercial": 1
+              }
+            },
+            {
+              "id": "6-12",
+              "order": 20,
+              "label": "De 6 a 12 embarques",
+              "scores": {
+                "commercial": 2
+              }
+            },
+            {
+              "id": "over-12",
+              "order": 30,
+              "label": "Más de 12 embarques",
+              "scores": {
+                "commercial": 3
+              }
+            },
+            {
+              "id": "unknown",
+              "order": 40,
+              "label": "Todavía no lo tengo claro",
+              "scores": {
+                "commercial": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "owner",
+          "order": 30,
+          "prompt": "¿Cuentas con una persona encargada de tus operaciones de comercio exterior?",
+          "type": "singleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "internal",
+              "order": 10,
+              "label": "Sí, dentro de mi organización",
+              "scores": {}
+            },
+            {
+              "id": "external",
+              "order": 20,
+              "label": "Sí, mediante un proveedor externo",
+              "scores": {}
+            },
+            {
+              "id": "both",
+              "order": 30,
+              "label": "Sí, de ambas maneras",
+              "scores": {}
+            },
+            {
+              "id": "none",
+              "order": 40,
+              "label": "No contamos con un responsable específico",
+              "scores": {}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "goods",
+      "order": 30,
+      "title": "Mercancía y especialización",
+      "questions": [
+        {
+          "id": "products",
+          "order": 10,
+          "prompt": "¿Qué tipo de mercancía o productos te interesa comercializar?",
+          "type": "multipleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "technology",
+              "order": 10,
+              "label": "Tecnología",
+              "scores": {}
+            },
+            {
+              "id": "machinery",
+              "order": 20,
+              "label": "Maquinaria y equipamiento",
+              "scores": {}
+            },
+            {
+              "id": "telecom",
+              "order": 30,
+              "label": "Telecomunicaciones",
+              "scores": {}
+            },
+            {
+              "id": "furniture",
+              "order": 40,
+              "label": "Mobiliario",
+              "scores": {}
+            },
+            {
+              "id": "skincare",
+              "order": 50,
+              "label": "Skincare",
+              "scores": {}
+            },
+            {
+              "id": "spares",
+              "order": 60,
+              "label": "Refacciones",
+              "scores": {}
+            },
+            {
+              "id": "electronics",
+              "order": 70,
+              "label": "Electrónica",
+              "scores": {}
+            },
+            {
+              "id": "personal-care",
+              "order": 80,
+              "label": "Productos de cuidado personal",
+              "scores": {}
+            },
+            {
+              "id": "electrical",
+              "order": 90,
+              "label": "Productos eléctricos",
+              "scores": {}
+            },
+            {
+              "id": "industrial-plastic",
+              "order": 100,
+              "label": "Plástico industrial",
+              "scores": {}
+            },
+            {
+              "id": "plastic",
+              "order": 110,
+              "label": "Productos plásticos",
+              "scores": {}
+            },
+            {
+              "id": "appliances",
+              "order": 120,
+              "label": "Electrodomésticos",
+              "scores": {}
+            },
+            {
+              "id": "other",
+              "order": 130,
+              "label": "Otra categoría de mercancía",
+              "scores": {}
+            }
+          ],
+          "minSelections": 1
+        },
+        {
+          "id": "other-product",
+          "prompt": "¿Qué otra mercancía te interesa?",
+          "type": "text",
+          "required": true,
+          "maxLength": 200,
+          "visibleWhen": {
+            "questionId": "products",
+            "operator": "anyOf",
+            "values": [
+              "other"
+            ]
+          },
+          "options": [],
+          "order": 20
+        }
+      ]
+    },
+    {
+      "id": "readiness",
+      "order": 40,
+      "title": "Preparación operativa",
+      "questions": [
+        {
+          "id": "technical",
+          "order": 10,
+          "prompt": "¿Cuentas con información técnica de los productos que deseas comercializar?",
+          "type": "singleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "available",
+              "order": 10,
+              "label": "Sí, cuento con ella",
+              "scores": {
+                "commercial": 1
+              }
+            },
+            {
+              "id": "unavailable",
+              "order": 20,
+              "label": "No cuento con ella",
+              "scores": {
+                "commercial": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "registry",
+          "order": 20,
+          "prompt": "¿Cuentas con padrón de importadores y/o exportadores, según corresponda?",
+          "type": "singleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "yes",
+              "order": 10,
+              "label": "Sí",
+              "scores": {
+                "commercial": 2
+              }
+            },
+            {
+              "id": "no",
+              "order": 20,
+              "label": "No",
+              "scores": {
+                "commercial": 1
+              }
+            },
+            {
+              "id": "unknown",
+              "order": 30,
+              "label": "Desconozco qué es",
+              "scores": {
+                "commercial": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "needs",
+      "order": 50,
+      "title": "Necesidades y contacto",
+      "questions": [
+        {
+          "id": "priorities",
+          "order": 10,
+          "prompt": "¿Qué te preocupa más en este momento?",
+          "type": "multipleChoice",
+          "required": true,
+          "options": [
+            {
+              "id": "trust",
+              "order": 10,
+              "label": "Confiabilidad de los proveedores",
+              "scores": {}
+            },
+            {
+              "id": "cost",
+              "order": 20,
+              "label": "Costo",
+              "scores": {}
+            },
+            {
+              "id": "time",
+              "order": 30,
+              "label": "Tiempo",
+              "scores": {}
+            },
+            {
+              "id": "coordination",
+              "order": 40,
+              "label": "Coordinación",
+              "scores": {}
+            },
+            {
+              "id": "compliance",
+              "order": 50,
+              "label": "Cumplimiento normativo",
+              "scores": {}
+            }
+          ],
+          "minSelections": 1,
+          "maxSelections": 2,
+          "helpText": "Puedes elegir hasta dos opciones."
+        },
+        {
+          "id": "blocker-detail",
+          "prompt": "¿Qué situación concreta necesitas resolver?",
+          "type": "text",
+          "required": false,
+          "maxLength": 400,
+          "options": [],
+          "order": 20
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "id": "incipient",
+      "dimensionId": "commercial",
+      "minScore": 0,
+      "maxScore": 5,
+      "label": "Incipiente",
+      "summary": "Prioridad interna; todos los prospectos reciben seguimiento."
+    },
+    {
+      "id": "developing",
+      "dimensionId": "commercial",
+      "minScore": 6,
+      "maxScore": 9,
+      "label": "En desarrollo",
+      "summary": "Prioridad interna; todos los prospectos reciben seguimiento."
+    },
+    {
+      "id": "qualified",
+      "dimensionId": "commercial",
+      "minScore": 10,
+      "maxScore": 13,
+      "label": "Calificado",
+      "summary": "Prioridad interna; todos los prospectos reciben seguimiento."
+    },
+    {
+      "id": "priority",
+      "dimensionId": "commercial",
+      "minScore": 14,
+      "maxScore": 17,
+      "label": "Prioritario",
+      "summary": "Prioridad interna; todos los prospectos reciben seguimiento."
+    }
+  ]
+}
