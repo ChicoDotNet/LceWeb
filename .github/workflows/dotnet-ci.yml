@@ -186,7 +186,8 @@ jobs:
           # Every localized route must resolve through the actual ASP.NET static middleware.
           for locale in en fr pt; do
             for route in / /diagnostico.html /privacidad.html /servicios/planeacion.html /servicios/logistica.html /servicios/normas-nom.html /l/costos-importacion.html /l/cumplimiento-nom.html /l/diagnostico-logistico.html /l/manifestacion-de-valor.html /l/proveedores-confiables.html /l/compliance-aduanero.html; do
-              curl --fail --silent "http://127.0.0.1:5055/${locale}${route}" | grep -q "<html lang=\"${locale}\""
+              curl --fail --silent "http://127.0.0.1:5055/${locale}${route}" > /tmp/lce-locale.html
+              grep -q "<html lang=\"${locale}\"" /tmp/lce-locale.html
             done
           done
           # Commercial version: no internal weights or bands in the public definition or receipt.

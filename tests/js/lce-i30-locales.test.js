@@ -48,3 +48,5 @@ test("all localized CTA modes retain locale, translated text and campaign attrib
    if(mode==="form"){assert.match(links[0].href,new RegExp("^/"+l+"/diagnostico.html"));assert.ok(links[0].href.includes("utm_source=google"));assert.ok(links[0].href.includes("utm_campaign=mve-2027"));}
  }
 });
+
+test("I30 deployment retains Spanish SEO and uses a separate translation approval gate without seeding",()=>{const s=readFileSync(new URL("../../scripts/azure/i30-release.ps1",import.meta.url),"utf8");assert.match(s,/ApproveTranslations/);assert.match(s,/Test-Diagnostic/);assert.match(s,/READ ONLY/);assert.doesNotMatch(s,/storage.*entity.*(?:insert|delete|update)|appsettings.*set/);});

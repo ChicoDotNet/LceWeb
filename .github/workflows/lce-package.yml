@@ -5,6 +5,9 @@ on:
   pull_request:
     paths:
       - 'src/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
       - '.github/workflows/lce-package.yml'
   push:
     branches:
@@ -16,6 +19,9 @@ on:
       - 'features/i*'
     paths:
       - 'src/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
       - '.github/workflows/lce-package.yml'
 
 permissions:
