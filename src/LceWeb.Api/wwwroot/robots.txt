@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /api/
+Disallow: /admin/
+Sitemap: https://lce-glt.azurewebsites.net/sitemap.xml

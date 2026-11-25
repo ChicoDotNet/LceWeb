@@ -1,0 +1,3 @@
+# I21 · Editorial 2027
+
+Three candidate pages: /l/manifestacion-de-valor.html, /l/proveedores-confiables.html, /l/compliance-aduanero.html. They use the common funnel and unique campaign IDs. Existing A/B funnels remain isolated. Candidates intentionally carry noindex and are absent from the sitemap until client review. Before releasing: verify MVE rules against current DOF, confirm MVE and provider scope, check canonical domain, approve removal of noindex and add to sitemap in same change. No claims of certification, tax defense or guarantees. Private research deliverables are not stored in this public repository.

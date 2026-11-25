@@ -52,6 +52,17 @@ public static class CommercialDiagnostic
             var tag = option switch { "trust" => "proveedores", "cost" => "costos", "time" => "logistica", "coordination" => "coordinacion", "compliance" => "compliance", _ => null };
             if (tag is not null) tags.Add(tag);
         }
+        var campaignTag = acquisition.UtmCampaign?.Trim().ToLowerInvariant() switch
+        {
+            "mve-2027" => "mve",
+            "proveedores-2027" => "proveedores",
+            "compliance-2027" => "compliance",
+            "hidden-leverage-costos" => "costos",
+            "proof-first-nom" => "nom",
+            "diagnostic-first-logistica" => "logistica",
+            _ => null
+        };
+        if (campaignTag is not null) tags.Add(campaignTag);
         foreach (var source in new[] { acquisition.PageUrl, acquisition.Referrer })
         {
             if (!Uri.TryCreate(source, UriKind.Absolute, out var uri)) continue;

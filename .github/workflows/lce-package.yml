@@ -76,6 +76,11 @@ jobs:
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/l/cumplimiento-nom.html"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/l/diagnostico-logistico.html"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/js/diagnostics/diagnostic-runtime.js"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/l/manifestacion-de-valor.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/l/proveedores-confiables.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/l/compliance-aduanero.html"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/robots.txt"
+          test -f "$RUNNER_TEMP/lce-publish/wwwroot/sitemap.xml"
 
       - name: Create deployment ZIP
         run: |
