@@ -4,6 +4,7 @@ namespace LceWeb.Api.Leads;
 
 public sealed record LeadSubmissionRequest
 {
+    public string? Language { get; init; }
     public Guid DiagnosticId { get; init; }
     public int DefinitionVersion { get; init; }
     public bool PrivacyAccepted { get; init; }
@@ -88,6 +89,7 @@ public sealed record LeadResult
 
 public sealed record LeadSubmission
 {
+    public string Language { get; init; } = "es";
     public IReadOnlyList<string> InterestTags { get; init; } = [];
     public IReadOnlyList<LeadAttachment> Attachments { get; init; } = [];
     public Guid Id { get; init; }

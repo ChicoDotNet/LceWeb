@@ -33,6 +33,7 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
             ["PrivacyNoticeVersion"] = submission.PrivacyNoticeVersion ?? string.Empty,
             ["PrivacyAcceptedUtc"] = submission.PrivacyAcceptedUtc ?? submission.CreatedUtc,
             ["DefinitionVersion"] = submission.DefinitionVersion,
+            ["Language"] = submission.Language,
             ["Name"] = submission.Contact.Name,
             ["Email"] = submission.Contact.Email,
             ["CallingCode"] = submission.Contact.Phone?.CallingCode,

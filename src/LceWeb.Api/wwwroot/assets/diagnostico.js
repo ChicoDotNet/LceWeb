@@ -1,3 +1,5 @@
+import { initializePageLanguage } from "/js/diagnostics/commercial-i18n.js";
+const language = initializePageLanguage();
 const root = document.querySelector("#lce-diagnostic");
 const nextStep = document.querySelector("#diagnostic-next-step");
 const formRoot = document.querySelector("#lead-capture");
@@ -35,7 +37,7 @@ try {
 if (root && formRoot && leadCaptureEnabled && privacyNoticeVersion) {
   try {
     const { attachLeadCapture } = await import("/js/leads/lead-capture.js");
-    attachLeadCapture({ diagnosticRoot: root, formRoot, privacyNoticeVersion, attachmentsEnabled });
+    attachLeadCapture({ diagnosticRoot: root, formRoot, privacyNoticeVersion, attachmentsEnabled, language });
   } catch {
     formRoot.hidden = true;
   }

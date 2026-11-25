@@ -40,6 +40,7 @@ public static class LeadEmailFormatter
         builder.AppendLine($"Nombre: {submission.Contact.Name}");
         builder.AppendLine($"Correo: {submission.Contact.Email}");
         builder.AppendLine($"Teléfono: {FormatPhone(submission.Contact.Phone)}");
+        builder.AppendLine($"Idioma: {submission.Language.ToUpperInvariant()}");
 
         AppendAcquisitionPlain(builder, submission.Acquisition);
 
@@ -71,6 +72,7 @@ public static class LeadEmailFormatter
         AppendHtmlRow(builder, "Nombre", submission.Contact.Name);
         AppendHtmlRow(builder, "Correo", submission.Contact.Email);
         AppendHtmlRow(builder, "Teléfono", FormatPhone(submission.Contact.Phone));
+        AppendHtmlRow(builder, "Idioma", submission.Language.ToUpperInvariant());
         builder.Append("</table>");
 
         AppendAcquisitionHtml(builder, submission.Acquisition);

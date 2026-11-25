@@ -1,3 +1,5 @@
+import { t, normalizeLanguage } from "../diagnostics/commercial-i18n.js";
+
 function collectAcquisition(locationValue = window.location, referrer = document.referrer) {
   const params = new URLSearchParams(locationValue.search);
   return {
@@ -22,6 +24,7 @@ export function buildLeadSubmissionPayload(diagnosticResult, contact, acquisitio
   return {
     diagnosticId: diagnosticResult.diagnosticId,
     definitionVersion: diagnosticResult.definitionVersion,
+    ...(diagnosticResult.definitionVersion >= 2 ? { language: normalizeLanguage(diagnosticResult.language) } : {}),
     privacyNoticeVersion,
     privacyAccepted,
     contact: {
@@ -45,7 +48,8 @@ export function attachLeadCapture({
   formRoot,
   endpoint = "/api/leads",
   privacyNoticeVersion,
-  attachmentsEnabled = false
+  attachmentsEnabled = false,
+  language = "es"
 }) {
   if (!diagnosticRoot || !formRoot) {
     throw new Error("diagnosticRoot and formRoot are required.");
@@ -55,36 +59,37 @@ export function attachLeadCapture({
   }
 
   let diagnosticResult = null;
+  const tr = key => t(key, language);
 
   formRoot.hidden = true;
   formRoot.innerHTML = `
     <form class="lce-lead clarity-mask" data-clarity-mask novalidate>
-      <h2 class="lce-lead__title">Recibe una revisión de tu diagnóstico</h2>
-      <p class="lce-lead__intro">Comparte tus datos para que podamos dar seguimiento con el contexto que acabas de responder.</p>
+      <h2 class="lce-lead__title">${tr("formTitle")}</h2>
+      <p class="lce-lead__intro">${tr("formIntro")}</p>
 
       <label class="lce-lead__field">
-        <span>Nombre *</span>
+        <span>${tr("name")}</span>
         <input name="name" autocomplete="name" maxlength="200" required>
       </label>
 
       <label class="lce-lead__field">
-        <span>Correo electrónico *</span>
+        <span>${tr("email")}</span>
         <input name="email" type="email" autocomplete="email" maxlength="320" required>
       </label>
 
       <div class="lce-lead__phone">
         <label class="lce-lead__field lce-lead__calling-code">
-          <span>Clave LD</span>
+          <span>${tr("code")}</span>
           <input name="callingCode" inputmode="tel" autocomplete="tel-country-code" value="+52" maxlength="5">
         </label>
         <label class="lce-lead__field">
-          <span>Teléfono (opcional)</span>
+          <span>${tr("phoneOptional")}</span>
           <input name="phoneNumber" inputmode="tel" autocomplete="tel-national" maxlength="24">
         </label>
       </div>
 
       <label class="lce-lead__field" data-attachment-field hidden>
-        <span>Adjuntar fichas técnicas (PDF, JPG o PNG; hasta 3 de 10 MB)</span>
+        <span>${tr("attachments")}</span>
         <input type="file" name="attachments" accept=".pdf,.jpg,.jpeg,.png" multiple disabled>
       </label>
 
@@ -95,19 +100,19 @@ export function attachLeadCapture({
 
       <label class="lce-lead__privacy">
         <input name="privacyAgreement" type="checkbox" required>
-        <span>He leído el <a href="/privacidad.html" target="_blank" rel="noopener noreferrer">aviso de privacidad vigente</a> y autorizo el tratamiento de los datos que envío para atender mi solicitud. *</span>
+        <span>${tr("privacyBefore")}<a href="/privacidad.html" target="_blank" rel="noopener noreferrer">${tr("privacyLink")}</a>${tr("privacyAfter")}</span>
       </label>
-      <p class="lce-lead__caution">No incluyas contraseñas, e.firma, RFC de terceros ni otros datos confidenciales.</p>
+      <p class="lce-lead__caution">${tr("caution")}</p>
 
       <div class="lce-lead__errors" role="alert" hidden></div>
-      <button class="lce-lead__submit" type="submit">Enviar diagnóstico</button>
+      <button class="lce-lead__submit" type="submit">${tr("send")}</button>
       <p class="lce-lead__status" role="status" aria-live="polite"></p>
     </form>`;
 
   const form = formRoot.querySelector("form");
   const revisionText = document.createElement("small");
   revisionText.className = "lce-lead__revision";
-  revisionText.textContent = `Aviso de privacidad: versión ${privacyNoticeVersion}`;
+  revisionText.textContent = `${tr("revision")} ${privacyNoticeVersion}`;
   form.querySelector(".lce-lead__privacy").append(revisionText);
   const errorsElement = formRoot.querySelector(".lce-lead__errors");
   const statusElement = formRoot.querySelector(".lce-lead__status");
@@ -118,8 +123,8 @@ export function attachLeadCapture({
     const commercial = diagnosticResult.definitionVersion >= 2;
     form.elements.phoneNumber.required = commercial;
     form.elements.callingCode.required = commercial;
-    form.elements.phoneNumber.closest("label").querySelector("span").textContent = commercial ? "Teléfono *" : "Teléfono (opcional)";
-    if (commercial) submitButton.textContent = "Solicitar una llamada";
+    form.elements.phoneNumber.closest("label").querySelector("span").textContent = commercial ? tr("phone") : tr("phoneOptional");
+    if (commercial) submitButton.textContent = tr("submit");
     const canAttach = commercial && attachmentsEnabled && diagnosticResult.answers?.technical?.answerIds?.includes("available");
     form.querySelector("[data-attachment-field]").hidden = !canAttach;
     form.elements.attachments.disabled = !canAttach;
@@ -138,7 +143,7 @@ export function attachLeadCapture({
     statusElement.textContent = "";
 
     if (!diagnosticResult) {
-      statusElement.textContent = "Completa primero el diagnóstico.";
+      statusElement.textContent = tr("completeFirst");
       return;
     }
 
@@ -161,12 +166,12 @@ export function attachLeadCapture({
       data.get("privacyAgreement") === "on");
 
     submitButton.disabled = true;
-    statusElement.textContent = "Enviando…";
+    statusElement.textContent = tr("sending");
 
     try {
       const files = form.elements.attachments.disabled ? [] : [...form.elements.attachments.files];
       if (files.length > 3 || files.some(f => f.size <= 0 || f.size > 10 * 1024 * 1024)) {
-        statusElement.textContent = "Adjunta hasta tres archivos de 10 MB cada uno.";
+        statusElement.textContent = tr("fileLimit");
         return;
       }
       const multipart = new FormData();
@@ -186,7 +191,7 @@ export function attachLeadCapture({
           for (const messages of Object.values(body.errors)) {
             for (const message of messages) {
               const item = document.createElement("li");
-              item.textContent = message;
+              item.textContent = language === "es" ? message : tr("invalidContact");
               list.append(item);
             }
           }
@@ -198,7 +203,7 @@ export function attachLeadCapture({
       }
 
       statusElement.textContent = diagnosticResult.definitionVersion >= 2
-        ? "Gracias por compartirnos tu operación. Próximamente recibirás una llamada de uno de nuestros asesores."
+        ? tr("success")
         : "Gracias. Tu diagnóstico fue enviado correctamente.";
       for (const field of form.querySelectorAll("input")) field.disabled = true;
       formRoot.dispatchEvent(new CustomEvent("lead:submitted", {
@@ -207,7 +212,7 @@ export function attachLeadCapture({
       }));
       submitButton.hidden = true;
     } catch (error) {
-      statusElement.textContent = "No pudimos enviar la información. Intenta nuevamente.";
+      statusElement.textContent = tr("failure");
       formRoot.dispatchEvent(new CustomEvent("lead:error", {
         bubbles: true,
         detail: { error }

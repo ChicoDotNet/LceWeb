@@ -181,6 +181,9 @@ app.MapPost(
                 requestErrors["diagnosticId"] = ["diagnosticId must be a non-empty GUID."];
             }
 
+            if (request.Language is not null && request.Language is not ("es" or "en" or "fr" or "pt"))
+                requestErrors["language"] = ["Idioma no admitido."];
+
             if (request.DefinitionVersion < 1)
             {
                 requestErrors["definitionVersion"] = ["definitionVersion must be at least 1."];
@@ -244,6 +247,7 @@ app.MapPost(
             {
                 Id = submissionId,
                 Attachments = attachments,
+                Language = request.Language ?? "es",
                 CreatedUtc = acceptedUtc,
                 PrivacyNoticeVersion = privacyNoticeVersion,
                 PrivacyAcceptedUtc = acceptedUtc,

@@ -1,3 +1,4 @@
+import { t, languageFromUrl, localizeDefinition } from "./commercial-i18n.js";
 import {
   buildDiagnosticResult,
   getVisibleSteps,
@@ -22,7 +23,8 @@ function emit(root, name, detail) {
 }
 
 class DiagnosticRuntime {
-  constructor(root, definition) {
+  constructor(root, definition, language = "es") {
+    this.language = language;
     this.root = root;
     this.definition = definition;
     this.answers = {};
@@ -39,7 +41,7 @@ class DiagnosticRuntime {
       section.append(createElement("p", "lce-diagnostic__body", this.definition.copy.introBody));
     }
 
-    const start = createElement("button", "lce-diagnostic__button lce-diagnostic__button--primary", "Comenzar");
+    const start = createElement("button", "lce-diagnostic__button lce-diagnostic__button--primary", t("start", this.language));
     start.type = "button";
     start.addEventListener("click", () => this.renderStep());
     section.append(start);
@@ -56,7 +58,7 @@ class DiagnosticRuntime {
 
     const section = createElement("section", "lce-diagnostic lce-diagnostic--step");
     section.dataset.stepId = step.id;
-    section.append(createElement("p", "lce-diagnostic__progress", `Paso ${this.stepIndex + 1} de ${visibleSteps.length}`));
+    section.append(createElement("p", "lce-diagnostic__progress", t("progress", this.language, { n: this.stepIndex + 1, total: visibleSteps.length })));
     section.append(createElement("h2", "lce-diagnostic__title", step.title));
     if (step.description) section.append(createElement("p", "lce-diagnostic__body", step.description));
 
@@ -70,7 +72,7 @@ class DiagnosticRuntime {
 
     const actions = createElement("div", "lce-diagnostic__actions");
     if (this.stepIndex > 0) {
-      const previous = createElement("button", "lce-diagnostic__button lce-diagnostic__button--secondary", "Anterior");
+      const previous = createElement("button", "lce-diagnostic__button lce-diagnostic__button--secondary", t("back", this.language));
       previous.type = "button";
       previous.addEventListener("click", () => {
         this.errors = {};
@@ -83,7 +85,7 @@ class DiagnosticRuntime {
     const next = createElement(
       "button",
       "lce-diagnostic__button lce-diagnostic__button--primary",
-      this.stepIndex === visibleSteps.length - 1 ? (this.definition.version >= 2 ? "Solicitar seguimiento" : "Ver resultado") : "Continuar"
+      this.stepIndex === visibleSteps.length - 1 ? (this.definition.version >= 2 ? t("last", this.language) : "Ver resultado") : t("next", this.language)
     );
     next.type = "submit";
     actions.append(next);
@@ -152,7 +154,7 @@ class DiagnosticRuntime {
     if (questionErrors.length > 0) {
       const list = createElement("ul", "lce-diagnostic__errors");
       list.setAttribute("role", "alert");
-      for (const error of questionErrors) list.append(createElement("li", "lce-diagnostic__error", error));
+      for (const error of questionErrors) list.append(createElement("li", "lce-diagnostic__error", this.language === "es" ? error : t("invalidAnswer", this.language)));
       fieldset.append(list);
     }
 
@@ -185,6 +187,7 @@ class DiagnosticRuntime {
 
   complete() {
     const result = buildDiagnosticResult(this.definition, this.answers);
+    if (this.definition.version >= 2) result.language = this.language;
     this.answers = result.answers;
     this.root.replaceChildren();
 
@@ -224,7 +227,8 @@ export async function mountDiagnostic(root, options = {}) {
 
   const baseUrl = options.apiBaseUrl ?? root.dataset.diagnosticApiBase ?? "";
   root.setAttribute("aria-live", "polite");
-  root.replaceChildren(createElement("p", "lce-diagnostic__status", "Cargando diagnóstico…"));
+  const language = root.dataset.diagnosticVersion === "1" ? "es" : languageFromUrl();
+  root.replaceChildren(createElement("p", "lce-diagnostic__status", t("loading", language)));
 
   try {
     const version = options.version ?? root.dataset.diagnosticVersion;
@@ -233,7 +237,7 @@ export async function mountDiagnostic(root, options = {}) {
     if (!response.ok) throw new Error(`No se pudo cargar el diagnóstico (${response.status}).`);
 
     const definition = await response.json();
-    const runtime = new DiagnosticRuntime(root, definition);
+    const runtime = new DiagnosticRuntime(root, localizeDefinition(definition, language), language);
     runtime.renderIntro();
     emit(root, "diagnostic:loaded", {
       diagnosticId: definition.id,
@@ -242,7 +246,7 @@ export async function mountDiagnostic(root, options = {}) {
     });
     return runtime;
   } catch (error) {
-    root.replaceChildren(createElement("p", "lce-diagnostic__status lce-diagnostic__status--error", "No pudimos cargar el diagnóstico. Intenta nuevamente."));
+    root.replaceChildren(createElement("p", "lce-diagnostic__status lce-diagnostic__status--error", t("loadError", language)));
     emit(root, "diagnostic:error", {
       diagnosticId,
       message: error instanceof Error ? error.message : String(error)
