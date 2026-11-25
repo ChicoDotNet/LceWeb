@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using System.Text.Json;
 using LceWeb.Api.Attachments;
+using LceWeb.Api.Admin;
 using Microsoft.AspNetCore.Http.Features;
 using LceWeb.Api.Diagnostics;
 using LceWeb.Api.Leads;
@@ -35,6 +36,7 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+var admin = AdminConfiguration.Register(builder.Services, builder.Configuration);
 var app = builder.Build();
 
 var leadStorage = app.Services.GetRequiredService<LeadStorageOptions>();
@@ -58,6 +60,26 @@ var attachmentsEnabled = publicLeadCaptureEnabled && attachmentStore.IsConfigure
     builder.Configuration.GetValue<bool>("Attachments:MalwareScanningConfigured") &&
     string.Equals(builder.Configuration["Attachments:PrivacyNoticeVersion"], privacyNoticeVersion, StringComparison.Ordinal);
 
+// Back office is deliberately unavailable unless Entra and durable storage are configured.
+if (admin.Enabled && !string.Equals(leadStorage.Provider, LeadStorageOptions.AzureTableProvider, StringComparison.OrdinalIgnoreCase))
+    throw new InvalidOperationException("Admin requires durable Azure Table storage.");
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/admin") || context.Request.Path.StartsWithSegments("/signin-oidc"))
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
+        if (!admin.Enabled) { context.Response.StatusCode = 404; return; }
+    }
+    await next();
+});
+if (admin.Enabled)
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseRateLimiter();
@@ -336,6 +358,7 @@ app.MapPost(
     .RequireRateLimiting("lead-submissions")
     .WithName("CreateLeadSubmission");
 
+app.MapAdmin(admin);
 app.Run();
 
 public partial class Program;

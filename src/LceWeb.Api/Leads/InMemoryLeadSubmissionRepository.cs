@@ -7,6 +7,8 @@ public sealed class InMemoryLeadSubmissionRepository : ILeadSubmissionRepository
     private readonly ConcurrentDictionary<(Guid DiagnosticId, Guid SubmissionId), LeadSubmission> _submissions = new();
     private readonly ConcurrentDictionary<(Guid DiagnosticId, Guid SubmissionId), LeadEmailDeliveryState> _emailDeliveries = new();
 
+    private readonly ConcurrentDictionary<(Guid, Guid), (string Status, string Revision, string? Actor, DateTimeOffset? UpdatedUtc)> _followUp = new();
+
     public ValueTask StoreAsync(
         LeadSubmission submission,
         CancellationToken cancellationToken = default)
@@ -35,6 +37,39 @@ public sealed class InMemoryLeadSubmissionRepository : ILeadSubmissionRepository
         cancellationToken.ThrowIfCancellationRequested();
         _submissions.TryGetValue((diagnosticId, submissionId), out var submission);
         return ValueTask.FromResult(submission);
+    }
+
+    public ValueTask<LeadAdminPage> ListAdminAsync(Guid diagnosticId, int? minimumScore, string? continuation, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var offset = int.TryParse(continuation, out var n) && n >= 0 ? n : 0;
+        var ordered = _submissions.Values.Where(x => x.DiagnosticId == diagnosticId && (!minimumScore.HasValue || (x.Scores.TryGetValue("commercial", out var value) && value >= minimumScore.Value)))
+            .OrderByDescending(x => x.CreatedUtc).ThenBy(x => x.Id).Skip(offset).Take(51).ToArray();
+        var rows = ordered.Take(50).Select(x =>
+        {
+            var key = (x.DiagnosticId, x.Id);
+            var state = _followUp.GetOrAdd(key, ("new", "0", null, null));
+            return new LeadAdminRow(x.Id, x.CreatedUtc, x.Contact.Name, x.Scores.TryGetValue("commercial", out var score) ? score : null, x.Language, x.Acquisition.UtmCampaign ?? "", state.Status, _emailDeliveries.GetValueOrDefault(key)?.Status.ToString() ?? "", string.Join(",", x.InterestTags));
+        }).ToArray();
+        return ValueTask.FromResult(new LeadAdminPage(rows, ordered.Length > 50 ? (offset + 50).ToString() : null));
+    }
+
+    public ValueTask<LeadAdminDetail?> GetAdminAsync(Guid diagnosticId, Guid submissionId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var key = (diagnosticId, submissionId);
+        if (!_submissions.TryGetValue(key, out var submission)) return ValueTask.FromResult<LeadAdminDetail?>(null);
+        var state = _followUp.GetOrAdd(key, ("new", "0", null, null));
+        return ValueTask.FromResult<LeadAdminDetail?>(new(submission, state.Status, _emailDeliveries.GetValueOrDefault(key)?.Status.ToString() ?? "", state.Revision, state.Actor, state.UpdatedUtc));
+    }
+
+    public ValueTask<bool> UpdateFollowUpAsync(Guid diagnosticId, Guid submissionId, string status, string revision, string actor, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var key = (diagnosticId, submissionId);
+        if (!_submissions.ContainsKey(key) || !LeadFollowUp.IsValid(status)) return ValueTask.FromResult(false);
+        var old = _followUp.GetOrAdd(key, ("new", "0", null, null));
+        return ValueTask.FromResult(old.Revision == revision && _followUp.TryUpdate(key, (status, Guid.NewGuid().ToString("N"), actor, now), old));
     }
 
     public ValueTask UpdateEmailDeliveryAsync(

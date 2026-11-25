@@ -43,6 +43,7 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
             ["UtmCampaign"] = submission.Acquisition.UtmCampaign,
             ["PageUrl"] = submission.Acquisition.PageUrl,
             ["EmailStatus"] = LeadEmailStatus.Pending.ToString(),
+            ["FollowUpStatus"] = "new",
             ["EmailStatusUpdatedUtc"] = submission.CreatedUtc,
             ["EmailOperationId"] = string.Empty,
             ["EmailError"] = string.Empty,
@@ -78,7 +79,11 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
             return null;
         }
 
-        var entity = response.Value;
+        return Parse(response.Value, diagnosticId, submissionId);
+    }
+
+    private LeadSubmission Parse(TableEntity entity, Guid diagnosticId, Guid submissionId)
+    {
         var submissionJson = entity.GetString("SubmissionJson");
         if (string.IsNullOrWhiteSpace(submissionJson))
         {
@@ -97,6 +102,52 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
         }
 
         return submission;
+    }
+
+    public async ValueTask<LeadAdminPage> ListAdminAsync(Guid diagnosticId, int? minimumScore, string? continuation, CancellationToken cancellationToken = default)
+    {
+        var partition = diagnosticId.ToString("D");
+        var filter = minimumScore.HasValue
+            ? TableClient.CreateQueryFilter($"PartitionKey eq {partition} and CommercialScore ge {minimumScore.Value}")
+            : TableClient.CreateQueryFilter($"PartitionKey eq {partition}");
+        var fields = new[] { "CreatedUtc", "Name", "CommercialScore", "Language", "UtmCampaign", "FollowUpStatus", "EmailStatus", "InterestTags" };
+        await foreach (var page in tableClient.QueryAsync<TableEntity>(filter, 50, fields, cancellationToken).AsPages(continuation, 50))
+        {
+            var rows = page.Values.Select(entity => new LeadAdminRow(
+                Guid.Parse(entity.RowKey), entity.GetDateTimeOffset("CreatedUtc") ?? DateTimeOffset.MinValue,
+                entity.GetString("Name") ?? "", entity.GetInt32("CommercialScore"),
+                entity.GetString("Language") ?? "es", entity.GetString("UtmCampaign") ?? "",
+                entity.GetString("FollowUpStatus") ?? "new", entity.GetString("EmailStatus") ?? "",
+                entity.GetString("InterestTags") ?? "")).OrderByDescending(x => x.CreatedUtc).ToArray();
+            return new LeadAdminPage(rows, page.ContinuationToken);
+        }
+        return new LeadAdminPage([], null);
+    }
+
+    public async ValueTask<LeadAdminDetail?> GetAdminAsync(Guid diagnosticId, Guid submissionId, CancellationToken cancellationToken = default)
+    {
+        var result = await tableClient.GetEntityIfExistsAsync<TableEntity>(diagnosticId.ToString("D"), submissionId.ToString("D"), cancellationToken: cancellationToken);
+        if (!result.HasValue || result.Value is null) return null;
+        var entity = result.Value;
+        return new LeadAdminDetail(Parse(entity, diagnosticId, submissionId), entity.GetString("FollowUpStatus") ?? "new",
+            entity.GetString("EmailStatus") ?? "", entity.ETag.ToString(), entity.GetString("FollowUpActor"), entity.GetDateTimeOffset("FollowUpUpdatedUtc"));
+    }
+
+    public async ValueTask<bool> UpdateFollowUpAsync(Guid diagnosticId, Guid submissionId, string status, string revision, string actor, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        if (!LeadFollowUp.IsValid(status) || string.IsNullOrWhiteSpace(revision) || revision == "*") return false;
+        var result = await tableClient.GetEntityIfExistsAsync<TableEntity>(diagnosticId.ToString("D"), submissionId.ToString("D"), cancellationToken: cancellationToken);
+        if (!result.HasValue || result.Value is null || result.Value.ETag.ToString() != revision) return false;
+        var entity = new TableEntity(diagnosticId.ToString("D"), submissionId.ToString("D"))
+        {
+            ["FollowUpStatus"] = status, ["FollowUpActor"] = actor, ["FollowUpUpdatedUtc"] = now
+        };
+        try
+        {
+            await tableClient.UpdateEntityAsync(entity, result.Value.ETag, TableUpdateMode.Merge, cancellationToken);
+            return true;
+        }
+        catch (RequestFailedException ex) when (ex.Status is 404 or 412) { return false; }
     }
 
     public async ValueTask UpdateEmailDeliveryAsync(

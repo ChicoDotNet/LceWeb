@@ -11,6 +11,10 @@ public interface ILeadSubmissionRepository
         Guid submissionId,
         CancellationToken cancellationToken = default);
 
+    ValueTask<LeadAdminPage> ListAdminAsync(Guid diagnosticId, int? minimumScore, string? continuation, CancellationToken cancellationToken = default);
+    ValueTask<LeadAdminDetail?> GetAdminAsync(Guid diagnosticId, Guid submissionId, CancellationToken cancellationToken = default);
+    ValueTask<bool> UpdateFollowUpAsync(Guid diagnosticId, Guid submissionId, string status, string revision, string actor, DateTimeOffset now, CancellationToken cancellationToken = default);
+
     ValueTask UpdateEmailDeliveryAsync(
         Guid diagnosticId,
         Guid submissionId,
