@@ -11,7 +11,7 @@ const favicon = readFileSync(new URL("assets/favicon.svg", root), "utf8");
 test("homepage has actual branding and valid business contact links", () => {
   assert.match(page, /<html lang="es-MX">/);
   assert.match(page, /Líderes en Comercio Exterior/);
-  assert.match(page, /mailto:asanchez@lce\.com\.mx/);
+  assert.match(page, /mailto:contacto@lce\.com\.mx/);
   assert.match(page, /href="tel:\+525590476846"/);
   assert.doesNotMatch(page, /alert\(|onsubmit=|testimonios ficticios|demo: conectar/i);
   assert.match(page, /<meta name="description"/);

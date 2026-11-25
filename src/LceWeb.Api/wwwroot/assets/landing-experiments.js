@@ -30,7 +30,7 @@
   const destinations = {
     call: {url:call, label:copy[1]},
     whatsapp: {url:"https://wa.me/525590476846?text="+encodeURIComponent(msg), label:copy[2]},
-    email: {url:"mailto:asanchez@lce.com.mx?subject="+encodeURIComponent(copy[3]),label:copy[4]},
+    email: {url:"mailto:contacto@lce.com.mx?subject="+encodeURIComponent(copy[3]),label:copy[4]},
     form: {url:formUrl,label:copy[5]}
   };
   document.querySelectorAll("[data-cta-primary]").forEach(link => {

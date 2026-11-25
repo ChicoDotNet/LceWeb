@@ -76,7 +76,7 @@ test("all twelve landing x CTA variants resolve to the intended actionable URL",
      });
      const expected=variant==="call"?"tel:+525590476846":
                     variant==="whatsapp"?"https://wa.me/525590476846":
-                    variant==="email"?"mailto:asanchez@lce.com.mx":
+                    variant==="email"?"mailto:contacto@lce.com.mx":
                     id==="C"?"#diagnostico-vivo":"/diagnostico.html";
      for(const link of links){
        assert.ok(link.href.startsWith(expected),id+"/"+variant+" -> "+link.href);

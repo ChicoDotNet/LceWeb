@@ -1,0 +1,8 @@
+# I31 · Commercial QA from 18 November meetings
+
+- Current instruction: public commercial contact must be contacto@lce.com.mx. Update 44 commercial pages, structured metadata and dynamic CTA; no Azure mail settings changed.
+- First meeting 10:26–13:22, 26:50–31:44: target established Mexican and foreign companies or serious investment projects, product commercialization and specialization. Home now states that audience and actual product categories. No new regulated services or promises.
+- Second meeting 11:27–14:29: every submitted prospect gets a human review; phone and email, call-first flow. Remove the always-visible alternative email link in central diagnostic; retain contact fallback when the form is unavailable, now clearly labeled in embedded landing. Existing campaign experiment options remain.
+- Logistics service FAQ: LCE coordinates with the customs broker; does not replace the broker.
+- Legal exception: approved privacy notice retains the previously designated ARCO contact and current revision, in all four languages. Do not change legal contact or notice version until LCE confirms the institutional inbox receives and handles ARCO and approves updated text (mandatory phone for callback, private server scoring). Historical Git content and third-party search caches are not erased by this release.
+- Follow-ups: confirm newsletter URL, prepare optional landing-specific follow-up questions, validate editorial terms including labeling and certificates of origin within LCE scope, confirm ACS, live lead receipt, Entra, attachment safety, and domain. No score changes, no changes to storage or automatic rejection. The release can reuse i30-release.ps1 with the new package hash; no database writes. No actual deployment performed.

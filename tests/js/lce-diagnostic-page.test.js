@@ -21,7 +21,7 @@ test("diagnostic route connects to versioned definition via existing runtime", (
 
 test("diagnostic offers optional contact with clear, visitor-facing privacy guidance", () => {
   assert.match(page, /id="diagnostic-next-step"[^>]*hidden/);
-  assert.match(page, /mailto:asanchez@lce\.com\.mx/);
+  assert.match(page, /mailto:contacto@lce\.com\.mx/);
   assert.match(page, /tel:\+525590476846/);
   assert.match(page, /Puedes contestar el diagnóstico sin compartir datos de contacto/);
   assert.match(page, /Evita incluir contraseñas, e\.firma/);
