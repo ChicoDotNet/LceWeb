@@ -1,5 +1,16 @@
 const CONSENT_KEY = "lce_analytics_consent_v1";
 let loadPromise = null;
+const prefix = window.location.pathname.match(/^\/(en|fr|pt)(?:\/|$)/)?.[1];
+const requestedLanguage = new URLSearchParams(window.location.search).get("lang");
+const language = prefix ?? (["en","fr","pt"].includes(requestedLanguage) && window.location.pathname === "/diagnostico.html" ? requestedLanguage : "es");
+const analyticsCopy = {
+  es: ["Preferencias de analíticas", "Analíticas opcionales", "Usamos Microsoft Clarity únicamente con tu permiso para entender cómo se utiliza este sitio. Puedes rechazarlo sin afectar el diagnóstico ni el contacto.", "Información sobre privacidad", "Rechazar", "Permitir analíticas"],
+  en: ["Analytics preferences", "Optional analytics", "We use Microsoft Clarity only with your permission to understand how this site is used. You may reject it without affecting the assessment or contact.", "Privacy information", "Reject", "Allow analytics"],
+  fr: ["Préférences de statistiques", "Statistiques facultatives", "Nous utilisons Microsoft Clarity uniquement avec votre autorisation pour comprendre l’utilisation de ce site. Vous pouvez refuser sans affecter le diagnostic ni le contact.", "Informations de confidentialité", "Refuser", "Autoriser les statistiques"],
+  pt: ["Preferências de análises", "Análises opcionais", "Usamos o Microsoft Clarity somente com sua autorização para entender como este site é utilizado. Você pode rejeitar sem afetar o diagnóstico ou o contato.", "Informações de privacidade", "Rejeitar", "Permitir análises"]
+};
+const copy = analyticsCopy[language];
+
 
 function readPreference() {
   try {
@@ -39,26 +50,26 @@ function createButton(copy, primary, onClick) {
 function buildConsentUi() {
   const banner = document.createElement("aside");
   banner.id = "lce-cookie-choice";
-  banner.setAttribute("aria-label", "Preferencias de analíticas");
+  banner.setAttribute("aria-label", copy[0]);
   banner.className = "cookie-choice";
   banner.hidden = true;
 
   const content = document.createElement("div");
   content.className = "cookie-choice__body";
   const title = document.createElement("strong");
-  title.textContent = "Analíticas opcionales";
+  title.textContent = copy[1];
   const description = document.createElement("p");
-  description.textContent = "Usamos Microsoft Clarity únicamente con tu permiso para entender cómo se utiliza este sitio. Puedes rechazarlo sin afectar el diagnóstico ni el contacto.";
+  description.textContent = copy[2];
   const privacy = document.createElement("a");
-  privacy.href = "/privacidad.html";
-  privacy.textContent = "Información sobre privacidad";
+  privacy.href = (language === "es" ? "" : "/" + language) + "/privacidad.html";
+  privacy.textContent = copy[3];
   content.append(title, description, privacy);
 
   const actions = document.createElement("div");
   actions.className = "cookie-choice__actions";
   actions.append(
-    createButton("Rechazar", false, () => save("rejected")),
-    createButton("Permitir analíticas", true, () => save("accepted"))
+    createButton(copy[4], false, () => save("rejected")),
+    createButton(copy[5], true, () => save("accepted"))
   );
   banner.append(content, actions);
   document.body.append(banner);
@@ -66,7 +77,7 @@ function buildConsentUi() {
   const settingsButton = document.createElement("button");
   settingsButton.type = "button";
   settingsButton.className = "cookie-settings";
-  settingsButton.textContent = "Preferencias de analíticas";
+  settingsButton.textContent = copy[0];
   settingsButton.addEventListener("click", () => {
     banner.hidden = false;
     actions.querySelector("button")?.focus();

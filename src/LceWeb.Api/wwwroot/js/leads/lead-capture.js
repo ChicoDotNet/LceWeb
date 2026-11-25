@@ -1,11 +1,11 @@
 import { t, normalizeLanguage } from "../diagnostics/commercial-i18n.js";
 
-function collectAcquisition(locationValue = window.location, referrer = document.referrer) {
+export function collectAcquisition(locationValue = window.location, referrer = document.referrer, campaign = document.body?.dataset?.campaign) {
   const params = new URLSearchParams(locationValue.search);
   return {
-    utmSource: params.get("utm_source"),
-    utmMedium: params.get("utm_medium"),
-    utmCampaign: params.get("utm_campaign"),
+    utmSource: params.get("utm_source") ?? (campaign ? "landing" : null),
+    utmMedium: params.get("utm_medium") ?? (campaign ? "web" : null),
+    utmCampaign: params.get("utm_campaign") ?? campaign ?? null,
     utmTerm: params.get("utm_term"),
     utmContent: params.get("utm_content"),
     referrer: referrer || null,
@@ -59,7 +59,9 @@ export function attachLeadCapture({
   }
 
   let diagnosticResult = null;
+  language = normalizeLanguage(language);
   const tr = key => t(key, language);
+  const privacyHref = (language === "es" ? "" : "/" + language) + "/privacidad.html";
 
   formRoot.hidden = true;
   formRoot.innerHTML = `
@@ -100,7 +102,7 @@ export function attachLeadCapture({
 
       <label class="lce-lead__privacy">
         <input name="privacyAgreement" type="checkbox" required>
-        <span>${tr("privacyBefore")}<a href="/privacidad.html" target="_blank" rel="noopener noreferrer">${tr("privacyLink")}</a>${tr("privacyAfter")}</span>
+        <span>${tr("privacyBefore")}<a href="${privacyHref}" target="_blank" rel="noopener noreferrer">${tr("privacyLink")}</a>${tr("privacyAfter")}</span>
       </label>
       <p class="lce-lead__caution">${tr("caution")}</p>
 

@@ -39,6 +39,9 @@ jobs:
       - name: Bundle Clarity npm package for static ASP.NET Core hosting
         run: npm run build:clarity
 
+      - name: Generate static localized pages
+        run: npm run build:i18n
+
       - name: Verify landing, consent and diagnostic contracts
         run: npm run test:diagnostics
 
@@ -81,6 +84,12 @@ jobs:
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/l/compliance-aduanero.html"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/robots.txt"
           test -f "$RUNNER_TEMP/lce-publish/wwwroot/sitemap.xml"
+          for locale in en fr pt; do
+            test -f "$RUNNER_TEMP/lce-publish/wwwroot/$locale/index.html"
+            test -f "$RUNNER_TEMP/lce-publish/wwwroot/$locale/diagnostico.html"
+            test -f "$RUNNER_TEMP/lce-publish/wwwroot/$locale/privacidad.html"
+            test "$(find "$RUNNER_TEMP/lce-publish/wwwroot/$locale" -name '*.html' | wc -l)" = 12
+          done
 
       - name: Create deployment ZIP
         run: |

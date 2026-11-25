@@ -67,6 +67,7 @@ public static class CommercialDiagnostic
         {
             if (!Uri.TryCreate(source, UriKind.Absolute, out var uri)) continue;
             var path = uri.AbsolutePath.TrimEnd('/').ToLowerInvariant();
+            if (path.StartsWith("/en/", StringComparison.Ordinal) || path.StartsWith("/fr/", StringComparison.Ordinal) || path.StartsWith("/pt/", StringComparison.Ordinal)) path = path[3..];
             var tag = path switch
             {
                 "/l/costos-importacion.html" => "costos",

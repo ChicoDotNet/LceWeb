@@ -11,6 +11,9 @@
     link.href = target.pathname+target.search+target.hash;
     if(link.dataset.lceLocale===active)link.setAttribute("aria-current","page");else link.removeAttribute("aria-current");
   }
+  const bar = document.querySelector(".lce-language-bar");
+  const label = ({es:"Idioma del sitio",en:"Website language",fr:"Langue du site",pt:"Idioma do site"})[active];
+  if(bar){bar.setAttribute("aria-label",label);const span=bar.querySelector(".shell > span");if(span)span.textContent=label;}
   // Existing /diagnostico.html?lang=xx entry points keep their language when navigating away.
   if(!pathLanguage && active!=="es"){
     for(const link of document.querySelectorAll('a[href^="/"]:not([data-lce-locale])')){

@@ -24,7 +24,7 @@ function renderPage(source,p,lang,dict,stable,numbered,labels,reference,paths,la
    if(strict)missing.add(s);
    return s;
  };
- let html=source.replace(/<!-- lce-locale-(head|nav) -->[\s\S]*?<!-- \/lce-locale-\1 -->/g,"");
+ let html=source.replace(/<!-- lce-locale-head -->[\s\S]*?<!-- \/lce-locale-head -->\r?\n?/g,"").replace(/<!-- lce-locale-nav -->[\s\S]*?<!-- \/lce-locale-nav -->/g,"");
  if(p==="l/diagnostico-logistico.html")html=html.replace("La API y el navegador presentan una lectura orientativa.","Tus respuestas ayudan a nuestro equipo a preparar una primera conversación.");
  if(i>=0){
    html=html.replace(/<html lang="[^"]+"/,`<html lang="${lang}"`);

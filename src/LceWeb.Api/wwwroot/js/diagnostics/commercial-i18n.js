@@ -104,9 +104,9 @@ const ui = {
   ],
   "privacyLink": [
     "aviso de privacidad vigente",
-    "current privacy notice (Spanish)",
-    "avis de confidentialité en vigueur (espagnol)",
-    "aviso de privacidade vigente (espanhol)"
+    "privacy notice (reference translation)",
+    "avis de confidentialité (traduction de référence)",
+    "aviso de privacidade (tradução de referência)"
   ],
   "privacyAfter": [
     " y autorizo el tratamiento de los datos que envío para atender mi solicitud. *",
@@ -290,9 +290,9 @@ const ui = {
   ],
   "sidebarPrivacyLink": [
     "Consulta nuestro aviso de privacidad",
-    "Read our privacy notice (Spanish)",
-    "Consultez notre avis de confidentialité (espagnol)",
-    "Consulte nosso aviso de privacidade (espanhol)"
+    "Read our privacy notice (reference translation)",
+    "Consultez notre avis de confidentialité (traduction de référence)",
+    "Consulte nosso aviso de privacidade (tradução de referência)"
   ],
   "sidebarWarning": [
     "Evita incluir contraseñas, e.firma, documentos confidenciales o datos personales de terceros.",
@@ -741,7 +741,11 @@ const definitions = {
   }
 };
 export function normalizeLanguage(value) { return languages.includes(value) ? value : "es"; }
-export function languageFromUrl(locationValue = globalThis.location) { return normalizeLanguage(new URLSearchParams(locationValue?.search ?? "").get("lang")); }
+export function languageFromUrl(locationValue = globalThis.location) {
+  const path = locationValue?.pathname ?? "";
+  const prefix = path.match(/^\/(en|fr|pt)(?:\/|$)/)?.[1];
+  return prefix ?? normalizeLanguage(new URLSearchParams(locationValue?.search ?? "").get("lang"));
+}
 export function t(key, language = "es", vars = {}) {
   const value = ui[key]?.[languages.indexOf(normalizeLanguage(language))] ?? key;
   return value.replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? ""));
@@ -762,15 +766,19 @@ export function localizeDefinition(definition, language) {
 export function initializePageLanguage(scope = document, locationValue = window.location) {
   const language = languageFromUrl(locationValue);
   const selector = scope.querySelector("#diagnostic-language");
-  if (!selector) return "es"; // do not overwrite independent landing metadata
+  if (!selector) return language; // embedded logistics diagnostic keeps the page locale
   scope.documentElement.lang = language === "es" ? "es-MX" : language;
   scope.title = t("pageTitle", language);
-  if (language !== "es") for (const node of scope.querySelectorAll("[data-i18n]")) node.textContent = t(node.dataset.i18n, language);
+  // Static localized pages are already translated, including inline markup. Only legacy query URLs need the runtime translation.
+  const staticLocale = /^\/(en|fr|pt)(?:\/|$)/.test(locationValue.pathname ?? "");
+  if (!staticLocale && language !== "es") for (const node of scope.querySelectorAll("[data-i18n]")) node.textContent = t(node.dataset.i18n, language);
   if (selector) {
     selector.value = language;
     selector.addEventListener("change", () => {
       const url = new URL(locationValue.href);
-      url.searchParams.set("lang", normalizeLanguage(selector.value));
+      const target = normalizeLanguage(selector.value);
+      url.pathname = (target === "es" ? "" : "/" + target) + "/diagnostico.html";
+      url.searchParams.delete("lang");
       locationValue.assign(url.href);
     });
   }

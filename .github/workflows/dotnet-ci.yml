@@ -47,6 +47,9 @@ jobs:
         with:
           node-version: 22.x
 
+      - name: Generate static localized pages
+        run: npm run build:i18n
+
       - name: Test browser modules
         run: npm run test:diagnostics
 
@@ -180,6 +183,12 @@ jobs:
           curl --fail --silent http://127.0.0.1:5055/js/leads/lead-capture.js > /tmp/lead-capture.js
           grep -q 'buildLeadSubmissionPayload' /tmp/lead-capture.js
 
+          # Every localized route must resolve through the actual ASP.NET static middleware.
+          for locale in en fr pt; do
+            for route in / /diagnostico.html /privacidad.html /servicios/planeacion.html /servicios/logistica.html /servicios/normas-nom.html /l/costos-importacion.html /l/cumplimiento-nom.html /l/diagnostico-logistico.html /l/manifestacion-de-valor.html /l/proveedores-confiables.html /l/compliance-aduanero.html; do
+              curl --fail --silent "http://127.0.0.1:5055/${locale}${route}" | grep -q "<html lang=\"${locale}\""
+            done
+          done
           # Commercial version: no internal weights or bands in the public definition or receipt.
           curl --fail --silent http://127.0.0.1:5055/api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425 > /tmp/commercial.json
           python3 - <<'PY'
