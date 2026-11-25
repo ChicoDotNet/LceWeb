@@ -44,7 +44,8 @@ export function attachLeadCapture({
   diagnosticRoot,
   formRoot,
   endpoint = "/api/leads",
-  privacyNoticeVersion
+  privacyNoticeVersion,
+  attachmentsEnabled = false
 }) {
   if (!diagnosticRoot || !formRoot) {
     throw new Error("diagnosticRoot and formRoot are required.");
@@ -82,6 +83,11 @@ export function attachLeadCapture({
         </label>
       </div>
 
+      <label class="lce-lead__field" data-attachment-field hidden>
+        <span>Adjuntar fichas técnicas (PDF, JPG o PNG; hasta 3 de 10 MB)</span>
+        <input type="file" name="attachments" accept=".pdf,.jpg,.jpeg,.png" multiple disabled>
+      </label>
+
       <label class="lce-lead__honeypot" aria-hidden="true">
         <span>Sitio web</span>
         <input name="website" tabindex="-1" autocomplete="off">
@@ -114,6 +120,10 @@ export function attachLeadCapture({
     form.elements.callingCode.required = commercial;
     form.elements.phoneNumber.closest("label").querySelector("span").textContent = commercial ? "Teléfono *" : "Teléfono (opcional)";
     if (commercial) submitButton.textContent = "Solicitar una llamada";
+    const canAttach = commercial && attachmentsEnabled && diagnosticResult.answers?.technical?.answerIds?.includes("available");
+    form.querySelector("[data-attachment-field]").hidden = !canAttach;
+    form.elements.attachments.disabled = !canAttach;
+    if (!canAttach) form.elements.attachments.value = "";
     formRoot.hidden = false;
     formRoot.dispatchEvent(new CustomEvent("lead:ready", {
       bubbles: true,
@@ -154,10 +164,19 @@ export function attachLeadCapture({
     statusElement.textContent = "Enviando…";
 
     try {
+      const files = form.elements.attachments.disabled ? [] : [...form.elements.attachments.files];
+      if (files.length > 3 || files.some(f => f.size <= 0 || f.size > 10 * 1024 * 1024)) {
+        statusElement.textContent = "Adjunta hasta tres archivos de 10 MB cada uno.";
+        return;
+      }
+      const multipart = new FormData();
+      if (files.length) {
+        multipart.append("payload", JSON.stringify(payload));
+        for (const file of files) multipart.append("attachments", file);
+      }
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        ...(files.length ? { body: multipart } : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
       });
 
       const body = await response.json().catch(() => ({}));

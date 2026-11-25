@@ -1,4 +1,7 @@
 using System.Threading.RateLimiting;
+using System.Text.Json;
+using LceWeb.Api.Attachments;
+using Microsoft.AspNetCore.Http.Features;
 using LceWeb.Api.Diagnostics;
 using LceWeb.Api.Leads;
 using LceWeb.Api.Notifications;
@@ -16,6 +19,7 @@ builder.Services.AddDiagnosticDefinitionRepository(builder.Configuration, builde
 builder.Services.AddLeadSubmissionRepository(builder.Configuration);
 builder.Services.AddLeadNotifications(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<PrivateAttachmentStore>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -48,6 +52,12 @@ var publicLeadCaptureEnabled = app.Environment.IsDevelopment() ||
      builder.Configuration.GetValue<bool>("Leads:PrivacyNoticeApproved") &&
      !string.IsNullOrWhiteSpace(privacyNoticeVersion));
 
+var attachmentStore = app.Services.GetRequiredService<PrivateAttachmentStore>();
+var attachmentsEnabled = publicLeadCaptureEnabled && attachmentStore.IsConfigured &&
+    builder.Configuration.GetValue<bool>("Attachments:PublicUploadEnabled") &&
+    builder.Configuration.GetValue<bool>("Attachments:MalwareScanningConfigured") &&
+    string.Equals(builder.Configuration["Attachments:PrivacyNoticeVersion"], privacyNoticeVersion, StringComparison.Ordinal);
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseRateLimiter();
@@ -57,6 +67,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapGet("/api/public-capabilities", () => Results.Ok(new
     {
         leadCaptureEnabled = publicLeadCaptureEnabled,
+        attachmentsEnabled,
         privacyNoticeVersion = publicLeadCaptureEnabled ? privacyNoticeVersion : null
     }))
     .WithName("GetPublicCapabilities");
@@ -98,7 +109,7 @@ app.MapGet(
 app.MapPost(
         "/api/leads",
         async (
-            LeadSubmissionRequest request,
+            HttpRequest httpRequest,
             IDiagnosticDefinitionRepository diagnosticRepository,
             ILeadSubmissionRepository leadRepository,
             ILeadNotificationSender notificationSender,
@@ -114,6 +125,38 @@ app.MapPost(
                     title: "Public lead capture is not enabled",
                     detail: "Contacta a LCE por correo o teléfono mientras habilitamos el registro seguro.");
             }
+
+            LeadSubmissionRequest? request;
+            IFormFileCollection? files = null;
+            try
+            {
+                if (httpRequest.HasFormContentType)
+                {
+                    if (!attachmentsEnabled || httpRequest.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) != true)
+                        return Results.Problem(statusCode: 415, title: "Attachment upload is unavailable.");
+                    var limit = httpRequest.HttpContext.Features.Get<IHttpMaxRequestBodySizeFeature>();
+                    if (limit is { IsReadOnly: false }) limit.MaxRequestBodySize = PrivateAttachmentStore.MaxRequestBytes;
+                    var form = await httpRequest.ReadFormAsync(new FormOptions
+                    {
+                        MultipartBodyLengthLimit = PrivateAttachmentStore.MaxFileBytes,
+                        ValueLengthLimit = 128 * 1024,
+                        ValueCountLimit = 1
+                    }, cancellationToken);
+                    if (form.Count != 1 || form["payload"].Count != 1 || form["payload"].ToString().Length > 128 * 1024)
+                        return Results.BadRequest(new { title = "Invalid attachment payload." });
+                    request = JsonSerializer.Deserialize<LeadSubmissionRequest>(form["payload"].ToString(), DiagnosticJson.CreateOptions());
+                    files = form.Files;
+                }
+                else if (httpRequest.HasJsonContentType())
+                    request = await httpRequest.ReadFromJsonAsync<LeadSubmissionRequest>(DiagnosticJson.CreateOptions(), cancellationToken);
+                else return Results.Problem(statusCode: 415, title: "Unsupported content type.");
+            }
+            catch (Exception exception) when (exception is JsonException or InvalidDataException or BadHttpRequestException)
+            {
+                return Results.BadRequest(new { title = "Invalid request or attachment size." });
+            }
+            if (request is null || request.Contact is null || request.Answers is null)
+                return Results.BadRequest(new { title = "Invalid lead submission." });
 
             // The browser checkbox is not evidence on its own. Require the
             // exact published notice revision and persist a server-side timestamp.
@@ -175,9 +218,32 @@ app.MapPost(
             }
 
             var acceptedUtc = timeProvider.GetUtcNow();
+            var submissionId = Guid.NewGuid();
+            IReadOnlyList<LeadAttachment> attachments = [];
+            var scores = evaluation.Scores;
+            var bands = evaluation.Results;
+            if (files is { Count: > 0 })
+            {
+                if (definition.Version != 2 || !evaluation.Answers.Any(a => a.QuestionId == "technical" && a.AnswerIds.Contains("available")))
+                    return Results.BadRequest(new { title = "Attachments require technical information." });
+                try
+                {
+                    attachments = await attachmentStore.StoreAsync(submissionId, files, cancellationToken);
+                }
+                catch (InvalidDataException)
+                {
+                    return Results.ValidationProblem(new Dictionary<string, string[]> { ["attachments"] = ["Adjunta hasta tres archivos PDF, JPG o PNG de hasta 10 MB cada uno."] });
+                }
+                var adjusted = new Dictionary<string, int>(scores, StringComparer.Ordinal);
+                adjusted["commercial"] = Math.Min(17, adjusted.GetValueOrDefault("commercial") + 1);
+                scores = adjusted;
+                bands = definition.Results.Where(r => r.DimensionId == "commercial" && adjusted["commercial"] >= r.MinScore && (r.MaxScore is null || adjusted["commercial"] <= r.MaxScore))
+                    .Select(r => new LeadResult { Id = r.Id, DimensionId = r.DimensionId, Label = r.Label, Summary = r.Summary }).ToArray();
+            }
             var submission = new LeadSubmission
             {
-                Id = Guid.NewGuid(),
+                Id = submissionId,
+                Attachments = attachments,
                 CreatedUtc = acceptedUtc,
                 PrivacyNoticeVersion = privacyNoticeVersion,
                 PrivacyAcceptedUtc = acceptedUtc,
@@ -186,11 +252,13 @@ app.MapPost(
                 Contact = evaluation.Contact!,
                 Answers = evaluation.Answers,
                 Acquisition = evaluation.Acquisition,
-                Scores = evaluation.Scores,
-                Results = evaluation.Results,
+                Scores = scores,
+                Results = bands,
                 InterestTags = CommercialDiagnostic.InterestTags(evaluation.Answers, evaluation.Acquisition)
             };
 
+            // If persistence fails after uploading, keep the private blobs for reconciliation.
+            // A timeout may mean Table Storage committed successfully; deleting could destroy a valid lead's evidence.
             await leadRepository.StoreAsync(submission, cancellationToken);
 
             var logger = loggerFactory.CreateLogger("LeadNotifications");

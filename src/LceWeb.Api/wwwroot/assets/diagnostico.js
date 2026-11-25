@@ -16,6 +16,7 @@ if (root && nextStep) {
 // lead:ready listener cannot miss a fast completion event.
 let leadCaptureEnabled = false;
 let privacyNoticeVersion = null;
+let attachmentsEnabled = false;
 try {
   const response = await fetch("/api/public-capabilities", {
     cache: "no-store",
@@ -24,6 +25,7 @@ try {
   if (response.ok) {
     const capabilities = await response.json();
     leadCaptureEnabled = capabilities.leadCaptureEnabled === true;
+    attachmentsEnabled = capabilities.attachmentsEnabled === true;
     privacyNoticeVersion = typeof capabilities.privacyNoticeVersion === "string" ? capabilities.privacyNoticeVersion : null;
   }
 } catch {
@@ -33,7 +35,7 @@ try {
 if (root && formRoot && leadCaptureEnabled && privacyNoticeVersion) {
   try {
     const { attachLeadCapture } = await import("/js/leads/lead-capture.js");
-    attachLeadCapture({ diagnosticRoot: root, formRoot, privacyNoticeVersion });
+    attachLeadCapture({ diagnosticRoot: root, formRoot, privacyNoticeVersion, attachmentsEnabled });
   } catch {
     formRoot.hidden = true;
   }

@@ -1,0 +1,7 @@
+# I18: private technical file intake
+- JSON submissions remain capped at 128 KiB. Multipart is admitted only after public capture and a separate attachment gate; 3 PDF/JPEG/PNG files, 10 MiB each, 32 MiB request.
+- Private Azure Blob quarantine, Managed Identity, generated blob names, structural signature and size checks, SHA-256; metadata in the lead, no email attachments or public SAS.
+- A successful upload adds one commercial point (receipt, not legal/technical verification). The internal scan status starts Pending. No download endpoint in this increment. I23 must enforce authorization and clean scan before any user access.
+- Deployment must configure a private container and Managed Identity Blob Data Contributor; verify Defender for Storage malware scanning and its monitoring, explicitly approve the revised privacy notice covering uploaded files, retention, access and removal, then set Attachments__ServiceUri, Attachments__ContainerName, Attachments__PrivacyNoticeVersion, Attachments__MalwareScanningConfigured=true and Attachments__PublicUploadEnabled=true. Until all conditions hold, no public multipart submissions are accepted.
+- Never interpret file signature checks as malware scanning. Reconcile orphan prefixes after ambiguous lead persistence failures and define retention with LCE. Do not delete a blob based solely on a timeout.
+- Still pending: real Azure test, scan result integration and protected read access, and privacy approval. Do not activate upload in production until these controls are verified.

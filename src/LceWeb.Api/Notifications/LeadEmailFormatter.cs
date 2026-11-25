@@ -49,6 +49,7 @@ public static class LeadEmailFormatter
 
         builder.AppendLine();
         builder.AppendLine($"Intereses: {string.Join(", ", submission.InterestTags)}");
+        builder.AppendLine($"Fichas técnicas recibidas: {submission.Attachments.Count} (cuarentena; revisión de seguridad pendiente)");
         builder.AppendLine("RESULTADOS");
         AppendResultsPlain(builder, definition, submission);
 
@@ -78,6 +79,7 @@ public static class LeadEmailFormatter
         AppendAnswersHtml(builder, definition, submission.Answers);
 
         builder.Append($"<p><strong>Intereses:</strong> {Encode(string.Join(", ", submission.InterestTags))}</p>");
+        builder.Append($"<p>Fichas técnicas recibidas: {submission.Attachments.Count} (cuarentena; revisión de seguridad pendiente)</p>");
         builder.Append("<h2 style=\"font-size:20px\">Resultados</h2>");
         AppendResultsHtml(builder, definition, submission);
 
