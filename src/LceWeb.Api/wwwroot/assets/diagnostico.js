@@ -1,6 +1,7 @@
 import { initializePageLanguage } from "/js/diagnostics/commercial-i18n.js";
 const language = initializePageLanguage();
 const root = document.querySelector("#lce-diagnostic");
+if (root) root.dataset.diagnosticLanguage = language;
 const nextStep = document.querySelector("#diagnostic-next-step");
 const formRoot = document.querySelector("#lead-capture");
 

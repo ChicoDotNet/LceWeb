@@ -89,6 +89,12 @@ jobs:
           grep -q '"leadCaptureEnabled":true' /tmp/capabilities-dev.json
           grep -q '"privacyNoticeVersion":"development-test"' /tmp/capabilities-dev.json
 
+          # Back office must be inaccessible by default, including forged proxy identity headers.
+          for route in /admin /admin/login /admin/leads/00000000-0000-0000-0000-000000000001; do
+            test "$(curl --silent -o /dev/null -w '%{http_code}' -H 'X-MS-CLIENT-PRINCIPAL: forged' "http://127.0.0.1:5055$route")" = "404"
+          done
+          test "$(curl --silent -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:5055/admin/leads/00000000-0000-0000-0000-000000000001/status)" = "404"
+
           curl --fail --silent \
             http://127.0.0.1:5055/api/diagnostics/16f5812b-6a27-44f6-b5b4-557a720a6425?version=1 \
             > /tmp/diagnostic.json
