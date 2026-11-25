@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test:diagnostics": "node --test tests/js/*.test.js",
-    "build:clarity": "esbuild src/LceWeb.Api/client/clarity-client.js --bundle --format=esm --platform=browser --target=es2020 --minify --outfile=src/LceWeb.Api/wwwroot/assets/clarity-bundle.js"
+    "build:clarity": "esbuild src/LceWeb.Api/client/clarity-client.js --bundle --format=esm --platform=browser --target=es2020 --minify --outfile=src/LceWeb.Api/wwwroot/assets/clarity-bundle.js",
+    "build:i18n": "node scripts/i18n/generate.mjs"
   },
   "dependencies": {
     "@microsoft/clarity": "1.0.2"
