@@ -205,7 +205,11 @@ export function attachLeadCapture({
       statusElement.textContent = diagnosticResult.definitionVersion >= 2
         ? tr("success")
         : "Gracias. Tu diagnóstico fue enviado correctamente.";
+      form.reset();
       for (const field of form.querySelectorAll("input")) field.disabled = true;
+      form.classList.add("lce-lead--submitted");
+      statusElement.setAttribute("tabindex", "-1");
+      statusElement.focus();
       formRoot.dispatchEvent(new CustomEvent("lead:submitted", {
         bubbles: true,
         detail: body

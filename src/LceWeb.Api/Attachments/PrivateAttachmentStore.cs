@@ -43,7 +43,7 @@ public sealed class PrivateAttachmentStore
             var extension = Path.GetExtension(name).ToLowerInvariant();
             await using var stream = file.OpenReadStream();
             var prefix = new byte[8];
-            var count = await stream.ReadAtLeastAsync(prefix, prefix.Length, throwIfEndOfStream: false, cancellationToken: cancellationToken);
+            var count = await stream.ReadAtLeastAsync(prefix, prefix.Length, false, cancellationToken);
             var media = extension switch
             {
                 ".pdf" when count >= 5 && prefix.AsSpan(0, 5).SequenceEqual("%PDF-"u8) => "application/pdf",

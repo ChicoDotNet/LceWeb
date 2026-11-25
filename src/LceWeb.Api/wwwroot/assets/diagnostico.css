@@ -11,3 +11,6 @@
 @media(max-width:580px){.lce-lead__phone{grid-template-columns:80px 1fr}.lce-lead__submit{width:100%}}
 
 .lce-lead__revision{display:block;margin:6px 0 0 23px;font-size:11px;color:#586b78;line-height:1.4}
+
+#diagnostic-language{display:block;max-width:100%;margin:8px 0 22px;padding:10px;border:1px solid #bbd0d8;border-radius:8px;font:inherit;color:var(--navy);background:#fff}
+.lce-lead__field[hidden]{display:none}.lce-lead--submitted>*:not(.lce-lead__status){display:none}.lce-lead--submitted .lce-lead__status{font-size:16px;line-height:1.6;padding:20px;border:1px solid #bcdad5;border-radius:10px;background:#eef8f6;color:#174b4b}

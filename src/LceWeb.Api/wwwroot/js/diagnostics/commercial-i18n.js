@@ -761,10 +761,11 @@ export function localizeDefinition(definition, language) {
 }
 export function initializePageLanguage(scope = document, locationValue = window.location) {
   const language = languageFromUrl(locationValue);
+  const selector = scope.querySelector("#diagnostic-language");
+  if (!selector) return "es"; // do not overwrite independent landing metadata
   scope.documentElement.lang = language === "es" ? "es-MX" : language;
   scope.title = t("pageTitle", language);
   if (language !== "es") for (const node of scope.querySelectorAll("[data-i18n]")) node.textContent = t(node.dataset.i18n, language);
-  const selector = scope.querySelector("#diagnostic-language");
   if (selector) {
     selector.value = language;
     selector.addEventListener("change", () => {

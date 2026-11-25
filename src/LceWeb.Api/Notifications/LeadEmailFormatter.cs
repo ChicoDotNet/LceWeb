@@ -51,6 +51,12 @@ public static class LeadEmailFormatter
         builder.AppendLine();
         builder.AppendLine($"Intereses: {string.Join(", ", submission.InterestTags)}");
         builder.AppendLine($"Fichas técnicas recibidas: {submission.Attachments.Count} (cuarentena; revisión de seguridad pendiente)");
+        if (submission.DefinitionVersion >= 2)
+        {
+            builder.AppendLine("GUÍA PARA LA PRIMERA LLAMADA (orientativa)");
+            foreach (var suggestion in CommercialDiagnostic.FollowUpSuggestions(submission.InterestTags)) builder.AppendLine($"- {suggestion}");
+            builder.AppendLine("Atender a todos los prospectos; el score sólo establece prioridad.");
+        }
         builder.AppendLine("RESULTADOS");
         AppendResultsPlain(builder, definition, submission);
 
@@ -82,6 +88,12 @@ public static class LeadEmailFormatter
 
         builder.Append($"<p><strong>Intereses:</strong> {Encode(string.Join(", ", submission.InterestTags))}</p>");
         builder.Append($"<p>Fichas técnicas recibidas: {submission.Attachments.Count} (cuarentena; revisión de seguridad pendiente)</p>");
+        if (submission.DefinitionVersion >= 2)
+        {
+            builder.Append("<h2>Guía para la primera llamada (orientativa)</h2><ul>");
+            foreach (var suggestion in CommercialDiagnostic.FollowUpSuggestions(submission.InterestTags)) builder.Append($"<li>{Encode(suggestion)}</li>");
+            builder.Append("</ul><p>Atender a todos los prospectos; el score sólo establece prioridad.</p>");
+        }
         builder.Append("<h2 style=\"font-size:20px\">Resultados</h2>");
         AppendResultsHtml(builder, definition, submission);
 

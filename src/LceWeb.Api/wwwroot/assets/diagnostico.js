@@ -7,7 +7,7 @@ const formRoot = document.querySelector("#lead-capture");
 // The questionnaire works whether or not lead collection is enabled.
 if (root && nextStep) {
   root.addEventListener("diagnostic:completed", () => {
-    nextStep.hidden = leadCaptureEnabled;
+    nextStep.hidden = leadFormReady;
   });
   root.addEventListener("diagnostic:error", () => {
     nextStep.hidden = true;
@@ -17,6 +17,7 @@ if (root && nextStep) {
 // Discover server permissions BEFORE the diagnostic engine mounts, so the
 // lead:ready listener cannot miss a fast completion event.
 let leadCaptureEnabled = false;
+let leadFormReady = false;
 let privacyNoticeVersion = null;
 let attachmentsEnabled = false;
 try {
@@ -38,6 +39,7 @@ if (root && formRoot && leadCaptureEnabled && privacyNoticeVersion) {
   try {
     const { attachLeadCapture } = await import("/js/leads/lead-capture.js");
     attachLeadCapture({ diagnosticRoot: root, formRoot, privacyNoticeVersion, attachmentsEnabled, language });
+    leadFormReady = true;
   } catch {
     formRoot.hidden = true;
   }

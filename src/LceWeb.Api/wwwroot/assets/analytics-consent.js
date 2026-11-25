@@ -95,6 +95,13 @@ function buildConsentUi() {
   }
 }
 
+// Only fixed event names, no diagnostic responses, scores or contact details.
+for (const [eventName, analyticsName] of [["diagnostic:completed", "lce_diagnostic_completed"], ["lead:submitted", "lce_lead_submitted"]]) {
+  document.addEventListener(eventName, () => {
+    if (readPreference() === "accepted" && typeof window.clarity === "function") window.clarity("event", analyticsName);
+  });
+}
+
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", buildConsentUi, { once: true });
 } else {

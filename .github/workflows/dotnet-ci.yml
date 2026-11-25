@@ -199,6 +199,23 @@ jobs:
           assert d['definitionVersion']==2 and d['submissionId'] and not d.get('scores') and not d.get('results')
           PY
 
+          # Public attachment intake stays closed unless privacy and scanning are configured.
+          status=$(curl --silent --output /tmp/multipart-denied.json --write-out '%{http_code}' -F 'payload={}' http://127.0.0.1:5055/api/leads)
+          test "$status" = "415"
+          python3 - <<'PY'
+          import json
+          lead=json.load(open('/tmp/commercial-lead.json'))
+          lead['language']='fr'
+          json.dump(lead,open('/tmp/commercial-fr.json','w'))
+          lead['language']='unsupported'
+          json.dump(lead,open('/tmp/commercial-language-invalid.json','w'))
+          PY
+          status=$(curl --silent --output /tmp/commercial-fr-response.json --write-out '%{http_code}' -H 'Content-Type: application/json' --data @/tmp/commercial-fr.json http://127.0.0.1:5055/api/leads)
+          test "$status" = "201"
+          status=$(curl --silent --output /tmp/commercial-language-error.json --write-out '%{http_code}' -H 'Content-Type: application/json' --data @/tmp/commercial-language-invalid.json http://127.0.0.1:5055/api/leads)
+          test "$status" = "400"
+          grep -q 'language' /tmp/commercial-language-error.json
+
           # Same binary in published mode: in-memory leads must fail closed.
           ASPNETCORE_URLS=http://127.0.0.1:5056 ASPNETCORE_ENVIRONMENT=Production \
             dotnet run --project src/LceWeb.Api/LceWeb.Api.csproj --configuration Release --no-build > /tmp/lceweb-prod.log 2>&1 &

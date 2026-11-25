@@ -20,6 +20,30 @@ public static class CommercialDiagnostic
         }).ToArray()
     };
 
+    public static IReadOnlyList<string> FollowUpSuggestions(IReadOnlyList<string> interests)
+    {
+        var suggestions = new List<string>();
+        foreach (var tag in interests)
+        {
+            var suggestion = tag switch
+            {
+                "proveedores" => "Explorar proveedores, condiciones de compra y alcance de la validación requerida.",
+                "costos" => "Revisar componentes del costo integral y alternativas de planeación.",
+                "logistica" => "Identificar fechas, rutas y obstáculos de coordinación.",
+                "coordinacion" => "Identificar responsables y participantes de la operación.",
+                "compliance" => "Explorar requisitos, información disponible y riesgos percibidos.",
+                "nom" => "Confirmar producto, uso y documentación técnica; canalizar la revisión especializada.",
+                "mve" => "Explorar datos y documentación de valoración; confirmar alcance con el especialista.",
+                "materialidad" => "Identificar disponibilidad y congruencia de documentos operativos.",
+                "tecnologia" => "Confirmar equipo, uso, componentes y mercados de origen y destino.",
+                _ => null
+            };
+            if (suggestion is not null) suggestions.Add(suggestion);
+        }
+        if (suggestions.Count == 0) suggestions.Add("Confirmar necesidades, etapa y expectativas durante la primera llamada.");
+        return suggestions;
+    }
+
     public static IReadOnlyList<string> InterestTags(IReadOnlyList<LeadAnswer> answers, LeadAcquisition acquisition)
     {
         var tags = new SortedSet<string>(StringComparer.Ordinal);
