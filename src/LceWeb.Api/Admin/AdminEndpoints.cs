@@ -19,20 +19,21 @@ public static class AdminEndpoints
         app.MapGet("/admin/login", () => Results.Challenge(new AuthenticationProperties { RedirectUri = "/admin" }, ["Entra"]));
         app.MapGet("/admin/denied", () => Results.Text("Acceso no autorizado. Solicita un rol de aplicación LCE.", statusCode: 403));
         var group = app.MapGroup("/admin").RequireAuthorization("LceStaff");
-        group.MapGet("", async (HttpContext context, ILeadSubmissionRepository repository, IAntiforgery antiforgery, int? minScore, string? next, CancellationToken ct) =>
+        group.MapGet("", async (HttpContext context, ILeadSubmissionRepository repository, IAntiforgery antiforgery, int? minScore, string? interest, string? product, string? language, string? next, CancellationToken ct) =>
         {
-            if (minScore is < 0 or > 17 || next is { Length: > 4096 }) return Results.BadRequest();
-            var result = await repository.ListAdminAsync(DiagnosticId, minScore, next, ct);
+            var filter = new LeadAdminFilter(minScore, interest, product, language);
+            if (!filter.IsValid || next is { Length: > 4096 }) return Results.BadRequest();
+            var result = await repository.ListAdminAsync(DiagnosticId, filter, next, ct);
             var token = antiforgery.GetAndStoreTokens(context).RequestToken!;
             var body = new StringBuilder("<h1>Prospectos LCE</h1><p>50 registros por página, ordenados por fecha dentro de la página. V1 conserva su historial sin score comercial.</p>");
-            body.Append("<form method='get'><label>Score mínimo (0–17) <input type='number' name='minScore' min='0' max='17' value='").Append(minScore?.ToString(CultureInfo.InvariantCulture)).Append("'></label> <button>Filtrar</button> <a href='/admin'>Limpiar</a></form>");
+            body.Append("<form method='get'><label>Score mínimo (0–17) <input type='number' name='minScore' min='0' max='17' value='").Append(minScore?.ToString(CultureInfo.InvariantCulture)).Append("'></label> ").Append(Select("interest", "Interés", LeadAdminFilter.Interests, interest)).Append(Select("product", "Mercancía", LeadAdminFilter.Products, product)).Append(Select("language", "Idioma", LeadAdminFilter.Languages, language)).Append(" <button>Filtrar</button> <a href='/admin'>Limpiar</a></form>");
             body.Append("<div class='scroll'><table><thead><tr><th>Fecha UTC</th><th>Prospecto</th><th>Score</th><th>Idioma</th><th>Campaña</th><th>Intereses</th><th>Seguimiento</th><th>Correo</th></tr></thead><tbody>");
             foreach (var row in result.Rows)
                 body.Append($"<tr><td>{row.CreatedUtc:yyyy-MM-dd HH:mm}</td><td><a href='/admin/leads/{row.Id:D}'>{E(row.Name)}</a></td><td>{(row.Score?.ToString(CultureInfo.InvariantCulture) ?? "—")}</td><td>{E(row.Language)}</td><td>{E(row.Campaign)}</td><td>{E(row.Interests)}</td><td>{E(Label(row.Status))}</td><td>{E(row.EmailStatus)}</td></tr>");
             body.Append("</tbody></table></div>");
             if (result.Rows.Count == 0) body.Append("<p>No hay resultados en esta página.</p>");
             if (!string.IsNullOrEmpty(result.Continuation))
-                body.Append($"<p><a href='/admin?minScore={minScore}&amp;next={Uri.EscapeDataString(result.Continuation)}'>Siguiente página →</a></p>");
+                body.Append($"<p><a href='/admin?minScore={minScore}&amp;interest={Uri.EscapeDataString(interest ?? "")}&amp;product={Uri.EscapeDataString(product ?? "")}&amp;language={Uri.EscapeDataString(language ?? "")}&amp;next={Uri.EscapeDataString(result.Continuation)}'>Siguiente página →</a></p>");
             body.Append(SignOut(token));
             return Html(body.ToString());
         });
@@ -105,6 +106,20 @@ public static class AdminEndpoints
         });
     }
 
+    private static string Select(string name, string label, string[] options, string? selected)
+    {
+        var body = new StringBuilder($"<label>{E(label)} <select name='{E(name)}'><option value=''>Todos</option>");
+        foreach (var option in options)
+            body.Append($"<option value='{E(option)}'{(option == selected ? " selected" : "")}>{E(ProductLabel(option))}</option>");
+        return body.Append("</select></label> ").ToString();
+    }
+    private static string ProductLabel(string value) => value switch
+    {
+        "technology" => "Tecnología", "machinery" => "Maquinaria y equipamiento", "telecom" => "Telecomunicaciones",
+        "furniture" => "Mobiliario", "skincare" => "Skincare", "spares" => "Refacciones", "electronics" => "Electrónica",
+        "personal-care" => "Cuidado personal", "electrical" => "Productos eléctricos", "industrial-plastic" => "Plástico industrial",
+        "plastic" => "Productos plásticos", "appliances" => "Electrodomésticos", "other" => "Otra", _ => value
+    };
     private static string Label(string status) => status switch
     {
         "new" => "Nuevo", "contacted" => "Contactado", "appointment" => "Cita", "proposal" => "Propuesta", "won" => "Ganado", "lost" => "No concretado", _ => status

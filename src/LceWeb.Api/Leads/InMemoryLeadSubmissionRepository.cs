@@ -39,11 +39,16 @@ public sealed class InMemoryLeadSubmissionRepository : ILeadSubmissionRepository
         return ValueTask.FromResult(submission);
     }
 
-    public ValueTask<LeadAdminPage> ListAdminAsync(Guid diagnosticId, int? minimumScore, string? continuation, CancellationToken cancellationToken = default)
+    public ValueTask<LeadAdminPage> ListAdminAsync(Guid diagnosticId, LeadAdminFilter filter, string? continuation, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var offset = int.TryParse(continuation, out var n) && n >= 0 ? n : 0;
-        var ordered = _submissions.Values.Where(x => x.DiagnosticId == diagnosticId && (!minimumScore.HasValue || (x.Scores.TryGetValue("commercial", out var value) && value >= minimumScore.Value)))
+        if (!filter.IsValid) throw new ArgumentException("Invalid filter.");
+        var ordered = _submissions.Values.Where(x => x.DiagnosticId == diagnosticId &&
+            (!filter.MinimumScore.HasValue || (x.Scores.TryGetValue("commercial", out var value) && value >= filter.MinimumScore.Value)) &&
+            (string.IsNullOrEmpty(filter.Interest) || x.InterestTags.Contains(filter.Interest)) &&
+            (string.IsNullOrEmpty(filter.Product) || x.Answers.Any(a => a.QuestionId == "products" && a.AnswerIds.Contains(filter.Product))) &&
+            (string.IsNullOrEmpty(filter.Language) || x.Language == filter.Language))
             .OrderByDescending(x => x.CreatedUtc).ThenBy(x => x.Id).Skip(offset).Take(51).ToArray();
         var rows = ordered.Take(50).Select(x =>
         {

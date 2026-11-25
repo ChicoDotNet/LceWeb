@@ -52,6 +52,12 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
             ["SubmissionJson"] = submissionJson
         };
 
+        // Fixed, allowlisted boolean fields support server-side filtering without substring scans.
+        foreach (var tag in submission.InterestTags.Where(LeadAdminFilter.Interests.Contains))
+            entity[LeadAdminFilter.InterestField(tag)] = true;
+        foreach (var product in submission.Answers.Where(a => a.QuestionId == "products").SelectMany(a => a.AnswerIds).Where(LeadAdminFilter.Products.Contains).Distinct())
+            entity[LeadAdminFilter.ProductField(product)] = true;
+
         try
         {
             await tableClient.AddEntityAsync(entity, cancellationToken);
@@ -104,14 +110,17 @@ public sealed class AzureTableLeadSubmissionRepository(TableClient tableClient)
         return submission;
     }
 
-    public async ValueTask<LeadAdminPage> ListAdminAsync(Guid diagnosticId, int? minimumScore, string? continuation, CancellationToken cancellationToken = default)
+    public async ValueTask<LeadAdminPage> ListAdminAsync(Guid diagnosticId, LeadAdminFilter filter, string? continuation, CancellationToken cancellationToken = default)
     {
         var partition = diagnosticId.ToString("D");
-        var filter = minimumScore.HasValue
-            ? TableClient.CreateQueryFilter($"PartitionKey eq {partition} and CommercialScore ge {minimumScore.Value}")
-            : TableClient.CreateQueryFilter($"PartitionKey eq {partition}");
+        if (!filter.IsValid) throw new ArgumentException("Invalid filter.");
+        var query = TableClient.CreateQueryFilter($"PartitionKey eq {partition}");
+        if (filter.MinimumScore.HasValue) query += " and " + TableClient.CreateQueryFilter($"CommercialScore ge {filter.MinimumScore.Value}");
+        if (!string.IsNullOrEmpty(filter.Interest)) query += " and " + LeadAdminFilter.InterestField(filter.Interest) + " eq true";
+        if (!string.IsNullOrEmpty(filter.Product)) query += " and " + LeadAdminFilter.ProductField(filter.Product) + " eq true";
+        if (!string.IsNullOrEmpty(filter.Language)) query += " and " + TableClient.CreateQueryFilter($"Language eq {filter.Language}");
         var fields = new[] { "CreatedUtc", "Name", "CommercialScore", "Language", "UtmCampaign", "FollowUpStatus", "EmailStatus", "InterestTags" };
-        await foreach (var page in tableClient.QueryAsync<TableEntity>(filter, 50, fields, cancellationToken).AsPages(continuation, 50))
+        await foreach (var page in tableClient.QueryAsync<TableEntity>(query, 50, fields, cancellationToken).AsPages(continuation, 50))
         {
             var rows = page.Values.Select(entity => new LeadAdminRow(
                 Guid.Parse(entity.RowKey), entity.GetDateTimeOffset("CreatedUtc") ?? DateTimeOffset.MinValue,
