@@ -55,7 +55,7 @@ var publicLeadCaptureEnabled = app.Environment.IsDevelopment() ||
      !string.IsNullOrWhiteSpace(privacyNoticeVersion));
 
 var attachmentStore = app.Services.GetRequiredService<PrivateAttachmentStore>();
-var attachmentsEnabled = publicLeadCaptureEnabled && attachmentStore.IsConfigured &&
+var attachmentsEnabled = publicLeadCaptureEnabled && admin.Enabled && attachmentStore.IsConfigured && attachmentStore.IsCleanReadConfigured &&
     builder.Configuration.GetValue<bool>("Attachments:PublicUploadEnabled") &&
     builder.Configuration.GetValue<bool>("Attachments:MalwareScanningConfigured") &&
     string.Equals(builder.Configuration["Attachments:PrivacyNoticeVersion"], privacyNoticeVersion, StringComparison.Ordinal);

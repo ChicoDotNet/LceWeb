@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using LceWeb.Api.Diagnostics;
+using LceWeb.Api.Attachments;
 using LceWeb.Api.Leads;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -35,7 +36,7 @@ public static class AdminEndpoints
             body.Append(SignOut(token));
             return Html(body.ToString());
         });
-        group.MapGet("/leads/{id:guid}", async (Guid id, HttpContext context, ILeadSubmissionRepository repository, IDiagnosticDefinitionRepository definitions, IAntiforgery antiforgery, CancellationToken ct) =>
+        group.MapGet("/leads/{id:guid}", async (Guid id, HttpContext context, ILeadSubmissionRepository repository, IDiagnosticDefinitionRepository definitions, IAntiforgery antiforgery, PrivateAttachmentStore attachmentStore, CancellationToken ct) =>
         {
             var detail = await repository.GetAdminAsync(DiagnosticId, id, ct);
             if (detail is null) return Results.NotFound();
@@ -60,12 +61,28 @@ public static class AdminEndpoints
             if (lead.Attachments.Count == 0) body.Append("<p>Sin adjuntos.</p>");
             else
             {
-                body.Append("<p>Archivos en cuarentena. La descarga permanece deshabilitada hasta validar un flujo de escaneo confiable.</p><ul>");
-                foreach (var item in lead.Attachments) body.Append($"<li>{E(item.FileName)} · {item.Length} bytes</li>");
+                body.Append("<p>Solo pueden descargarse archivos liberados por el proceso confiable de escaneo; si no existe una copia liberada, se deniega.</p><ul>");
+                for (var index = 0; index < lead.Attachments.Count; index++)
+                {
+                    var item = lead.Attachments[index];
+                    body.Append($"<li>{E(item.FileName)} · {item.Length} bytes");
+                    if (attachmentStore.IsCleanReadConfigured) body.Append($" · <a href='/admin/leads/{id:D}/attachments/{index}'>Descargar si está liberado</a>");
+                    body.Append("</li>");
+                }
                 body.Append("</ul>");
             }
             body.Append(SignOut(token));
             return Html(body.ToString());
+        });
+        group.MapGet("/leads/{id:guid}/attachments/{index:int}", async (Guid id, int index, ILeadSubmissionRepository repository, PrivateAttachmentStore storage, CancellationToken ct) =>
+        {
+            if (!storage.IsCleanReadConfigured || index < 0) return Results.NotFound();
+            var lead = await repository.GetAsync(DiagnosticId, id, ct);
+            if (lead is null || index >= lead.Attachments.Count) return Results.NotFound();
+            var item = lead.Attachments[index];
+            var bytes = await storage.ReadReleasedAsync(item, ct);
+            if (bytes is null) return Results.Conflict("El documento no está liberado o no coincide con el original.");
+            return Results.File(bytes, "application/octet-stream", item.FileName);
         });
         group.MapPost("/leads/{id:guid}/status", async (Guid id, HttpContext context, IAntiforgery antiforgery, ILeadSubmissionRepository repository, TimeProvider clock, CancellationToken ct) =>
         {

@@ -227,7 +227,7 @@ export async function mountDiagnostic(root, options = {}) {
 
   const baseUrl = options.apiBaseUrl ?? root.dataset.diagnosticApiBase ?? "";
   root.setAttribute("aria-live", "polite");
-  const language = root.dataset.diagnosticVersion === "1" ? "es" : languageFromUrl();
+  const language = root.dataset.diagnosticVersion === "1" ? "es" : (root.dataset.diagnosticLanguage ?? languageFromUrl());
   root.replaceChildren(createElement("p", "lce-diagnostic__status", t("loading", language)));
 
   try {

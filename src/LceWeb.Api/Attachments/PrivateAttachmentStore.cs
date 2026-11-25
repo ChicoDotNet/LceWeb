@@ -12,6 +12,7 @@ public sealed class PrivateAttachmentStore
     public const long MaxFileBytes = 10L * 1024 * 1024;
     public const long MaxRequestBytes = 32L * 1024 * 1024;
     private readonly BlobContainerClient? _container;
+    private readonly BlobContainerClient? _cleanContainer;
 
     public PrivateAttachmentStore(IConfiguration configuration)
     {
@@ -20,9 +21,40 @@ public sealed class PrivateAttachmentStore
         if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) &&
             uri.Scheme == Uri.UriSchemeHttps && !string.IsNullOrWhiteSpace(container))
             _container = new BlobServiceClient(uri, new DefaultAzureCredential()).GetBlobContainerClient(container);
+        var cleanEndpoint = configuration["Attachments:CleanServiceUri"];
+        var cleanName = configuration["Attachments:CleanContainerName"];
+        if (configuration.GetValue<bool>("Attachments:CleanReadEnabled") &&
+            Uri.TryCreate(cleanEndpoint, UriKind.Absolute, out var cleanUri) && cleanUri.Scheme == Uri.UriSchemeHttps && !string.IsNullOrWhiteSpace(cleanName))
+        {
+            var candidate = new BlobServiceClient(cleanUri, new DefaultAzureCredential()).GetBlobContainerClient(cleanName);
+            if (_container is not null && candidate.Uri != _container.Uri) _cleanContainer = candidate;
+        }
     }
 
     public bool IsConfigured => _container is not null;
+    public bool IsCleanReadConfigured => _cleanContainer is not null;
+
+    // Only a separately authorized and trusted scan-release identity writes the clean container.
+    public async Task<byte[]?> ReadReleasedAsync(LeadAttachment item, CancellationToken cancellationToken)
+    {
+        if (_cleanContainer is null || item.Length is <= 0 or > MaxFileBytes) return null;
+        var properties = await _cleanContainer.GetPropertiesAsync(cancellationToken: cancellationToken);
+        if (properties.Value.PublicAccess != PublicAccessType.None) return null;
+        var blob = _cleanContainer.GetBlobClient(item.BlobName);
+        try
+        {
+            var metadata = (await blob.GetPropertiesAsync(cancellationToken: cancellationToken)).Value;
+            if (metadata.ContentLength != item.Length) return null;
+            var result = await blob.DownloadContentAsync(new BlobDownloadOptions
+            {
+                Conditions = new BlobRequestConditions { IfMatch = metadata.ETag }
+            }, cancellationToken);
+            var bytes = result.Value.Content.ToArray();
+            if (bytes.LongLength != item.Length || !string.Equals(Convert.ToHexString(SHA256.HashData(bytes)), item.Sha256, StringComparison.OrdinalIgnoreCase)) return null;
+            return bytes;
+        }
+        catch (RequestFailedException ex) when (ex.Status is 404 or 412) { return null; }
+    }
 
     public async Task<IReadOnlyList<LeadAttachment>> StoreAsync(Guid leadId, IFormFileCollection files, CancellationToken cancellationToken)
     {
